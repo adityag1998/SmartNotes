@@ -4,8 +4,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -18,6 +20,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,8 +32,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //Add a sample note
-        notes.add("Example Note");
+        // Logic to Retrieve from SharedPrefs
+        SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
+                , Context.MODE_PRIVATE);
+        HashSet<String> hash = (HashSet<String>) sharedPreferences.getStringSet("notes" , null);
+        if (hash == null){
+            //Add a sample note
+            notes.add("This is an Example Note");
+        }
+        else {
+            notes = new ArrayList<>(hash);
+        }
 
         // Bind ListView with Array Adapter
         ListView listView = findViewById(R.id.listView);
@@ -47,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // LOng Click to delete
+        // Long Click to delete
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id)
@@ -62,6 +74,12 @@ public class MainActivity extends AppCompatActivity {
                             {
                                 notes.remove(position);
                                 arrayAdapter.notifyDataSetChanged();
+
+                                //Add Logic to edit stored Data
+                                SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
+                                        , Context.MODE_PRIVATE);
+                                HashSet<String> set = new HashSet<>(com.samsung.smartnotes.MainActivity.notes);
+                                sharedPreferences.edit().putStringSet("notes" , set).apply();
                             }
                         })
 
