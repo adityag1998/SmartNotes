@@ -18,6 +18,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,11 +28,22 @@ public class MainActivity extends AppCompatActivity {
     static ArrayList<String> notes = new ArrayList<String>();
     static ArrayAdapter<String> arrayAdapter;
 
+    protected void showToast (String text){
+        Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT).show();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Logic to know Receivable Intent from Dummy Camera App
+        Intent intent = getIntent();
+        String receivable = intent.getStringExtra("com.samsung.smartnotes.MainActivity.valueReceived");
+        if (receivable != null){
+            showToast("I just received a " + receivable);
+        }
+        
         // Logic to Retrieve from SharedPrefs
         SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
                 , Context.MODE_PRIVATE);
@@ -49,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, notes);
         listView.setAdapter(arrayAdapter);
 
-        //Add listener to ListView
+        //Add listener to ListView and send local Intent
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {

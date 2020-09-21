@@ -21,10 +21,12 @@ public class NoteEditorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_note_editor);
 
-        //Bind editText view in Java
-        EditText editText = (EditText) findViewById(R.id.editText);
+        //Logic to Receive Intent
         Intent intent = getIntent();
         noteID = intent.getIntExtra("com.samsung.smartnotes.MainActivity.noteID" , -1);
+
+        //Bind editText view in Java
+        EditText editText = (EditText) findViewById(R.id.editText);
 
         //If Note is existent edit the note
         if (noteID != -1){
