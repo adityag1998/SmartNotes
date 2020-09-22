@@ -16,7 +16,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -27,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     static ArrayList<String> notes = new ArrayList<String>();
     static ArrayAdapter<String> arrayAdapter;
+    protected ListView listView;
 
     protected void showToast (String text){
         Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT).show();
@@ -37,13 +37,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Logic to know Receivable Intent from Dummy Camera App
-        Intent intent = getIntent();
-        String receivable = intent.getStringExtra("com.samsung.smartnotes.MainActivity.valueReceived");
-        if (receivable != null){
-            showToast("I just received a " + receivable);
-        }
-        
         // Logic to Retrieve from SharedPrefs
         SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
                 , Context.MODE_PRIVATE);
@@ -57,11 +50,23 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Bind ListView with Array Adapter
-        ListView listView = findViewById(R.id.listView);
+        listView = (ListView) findViewById(R.id.listView);
         arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, notes);
         listView.setAdapter(arrayAdapter);
+    }
 
-        //Add listener to ListView and send local Intent
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Logic to know Receivable Intent from Dummy Camera App
+        Intent intent = getIntent();
+        String receivable = intent.getStringExtra("com.samsung.smartnotes.MainActivity.objectName");
+        if (receivable != null){
+            showToast("I just received a " + receivable);
+        }
+
+        //Add listener to ListView and send local Intent on position of listView
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -71,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Long Click to delete
+        // Add listener to listView and Long Click to delete
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id)
