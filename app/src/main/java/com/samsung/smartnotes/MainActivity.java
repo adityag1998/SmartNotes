@@ -24,8 +24,6 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -58,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    static ArrayList<Note> notes = new ArrayList<Note>();
-    static ArrayList<String> notesList = new ArrayList<String>();
+    static ArrayList<Note> notesList = new ArrayList<Note>();
+    static ArrayList<String> textList = new ArrayList<String>();
 
     static Gson gson = new Gson();
     static ArrayAdapter<String> arrayAdapter;
@@ -74,41 +72,36 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Logic to Retrieve from SharedPrefs
-        SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
-                , Context.MODE_PRIVATE);
+        if( notesList.size() == 0 ) {
+            // Logic to Retrieve from SharedPrefs
+            SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
+                    , Context.MODE_PRIVATE);
 
-        String jsonList = sharedPreferences.getString("notes" , null);
-        if (jsonList == null){
-            //Add a sample note
-            String exampleNote = "This is an Example Note";
-            notes.add(new Note(0, "example", exampleNote));
-            notesList.add(exampleNote);
-        }
-        else {
-            Type type = new TypeToken<ArrayList<Note>>(){}.getType();
-            notes = gson.fromJson(jsonList, type);
-            for (Note note : notes) {
-                notesList.add(note.getText());
+            String jsonList = sharedPreferences.getString("notes", null);
+            if (jsonList == null) {
+                //Add a sample note
+                String exampleNote = "This is an Example Note";
+                notesList.add(new Note(0, "example", exampleNote));
+                textList.add(exampleNote);
+            } else {
+                Type type = new TypeToken<ArrayList<Note>>() {
+                }.getType();
+                notesList = gson.fromJson(jsonList, type);
+                for (Note note : notesList) {
+                    textList.add(note.getText());
+                }
             }
         }
 
         // Bind ListView with Array Adapter
         listView = (ListView) findViewById(R.id.listView);
-        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, notesList);
+        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, textList);
         listView.setAdapter(arrayAdapter);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        // Logic to know Receivable Intent from Dummy Camera App
-        Intent intent = getIntent();
-        String receivable = intent.getStringExtra("com.samsung.smartnotes.MainActivity.objectName");
-        if (receivable != null){
-            showToast("I just received a " + receivable);
-        }
 
         //Add listener to ListView and send local Intent on position of listView
         listView.setOnItemClickListener(new OnItemClickListener() {
@@ -133,14 +126,14 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which)
                             {
-                                notes.remove(position);
                                 notesList.remove(position);
+                                textList.remove(position);
                                 arrayAdapter.notifyDataSetChanged();
 
                                 //Add Logic to edit stored Data
                                 SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
                                         , Context.MODE_PRIVATE);
-                                String jsonList = gson.toJson(notes);
+                                String jsonList = gson.toJson(notesList);
                                 sharedPreferences.edit().putString("notes", jsonList).apply();
                             }
                         })
@@ -175,4 +168,8 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 }

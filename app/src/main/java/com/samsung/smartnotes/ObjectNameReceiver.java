@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
+
 public class ObjectNameReceiver extends BroadcastReceiver {
     private static final String TAG = "ObjectNameReceiver";
     private static final String KEY = "com.example.dummycamera.objectName";
@@ -21,5 +22,19 @@ public class ObjectNameReceiver extends BroadcastReceiver {
         String log = sb.toString();
         Toast.makeText(context, log, Toast.LENGTH_LONG).show();
         Log.d(TAG, log);
+
+        String intentAction = intent.getAction();
+        String intentValue = intent.getStringExtra(KEY);
+
+        // TODO : Implement Search Scenario
+        if( MainActivity.notesList == null) {
+
+        }
+        for( MainActivity.Note note : MainActivity.notesList) {
+            if( note.getKey().toLowerCase() == intentValue.toLowerCase()) {
+                // TODO : Send intent to start floating icon service.
+                ;
+            }
+        }
     }
 }

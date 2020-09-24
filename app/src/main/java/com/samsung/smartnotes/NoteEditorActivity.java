@@ -2,7 +2,6 @@ package com.samsung.smartnotes;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,9 +10,6 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
 import android.widget.Toast;
-
-
-import java.util.HashSet;
 
 public class NoteEditorActivity extends AppCompatActivity {
 
@@ -38,14 +34,14 @@ public class NoteEditorActivity extends AppCompatActivity {
 
         //If Note is existent edit the note
         if (noteID != -1){
-            editText.setText(MainActivity.notesList.get(noteID));
-            editKey.setText(MainActivity.notes.get(noteID).getKey());
+            editText.setText(MainActivity.textList.get(noteID));
+            editKey.setText(MainActivity.notesList.get(noteID).getKey());
         }
         else
         {
-            MainActivity.notes.add(new MainActivity.Note(MainActivity.notesList.size(), "", ""));
-            MainActivity.notesList.add("");                // as initially, the note is empty
-            noteID = MainActivity.notes.size() - 1;
+            MainActivity.notesList.add(new MainActivity.Note(MainActivity.textList.size(), "", ""));
+            MainActivity.textList.add("");                // as initially, the note is empty
+            noteID = MainActivity.notesList.size() - 1;
         }
 
         //Change Note when text has been edited
@@ -57,8 +53,8 @@ public class NoteEditorActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                MainActivity.notesList.set(noteID, String.valueOf(s));
-                MainActivity.notes.get(noteID).setText(String.valueOf(s));
+                MainActivity.textList.set(noteID, String.valueOf(s));
+                MainActivity.notesList.get(noteID).setText(String.valueOf(s));
             }
 
             @Override
@@ -75,7 +71,7 @@ public class NoteEditorActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                MainActivity.notes.get(noteID).setKey(String.valueOf(s));
+                MainActivity.notesList.get(noteID).setKey(String.valueOf(s));
             }
 
             @Override
@@ -88,15 +84,15 @@ public class NoteEditorActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if(MainActivity.notes.get(noteID).getKey() == "" && MainActivity.notesList.get(noteID) == "") {
+        if(MainActivity.notesList.get(noteID).getKey() == "" && MainActivity.textList.get(noteID) == "") {
             // delete created note
+            MainActivity.textList.remove(noteID);
             MainActivity.notesList.remove(noteID);
-            MainActivity.notes.remove(noteID);
         } else {
             //Add Logic to store Data
             SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
                     , Context.MODE_PRIVATE);
-            String jsonList = MainActivity.gson.toJson(MainActivity.notes);
+            String jsonList = MainActivity.gson.toJson(MainActivity.notesList);
             sharedPreferences.edit().putString("notes", jsonList).apply();
         }
         MainActivity.arrayAdapter.notifyDataSetChanged();
