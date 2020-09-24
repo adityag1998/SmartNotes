@@ -1,9 +1,5 @@
 package com.samsung.smartnotes;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,12 +15,53 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+
 
 public class MainActivity extends AppCompatActivity {
 
-    static ArrayList<String> notes = new ArrayList<String>();
+    static class Note {
+        int id;
+        String key;
+        String text;
+
+        public Note(int id, String key, String text) {
+            this.id = id;
+            this.key = key;
+            this.text = text;
+        }
+
+        void setKey(String keyValue) {
+            this.key = keyValue;
+        }
+
+        void setText(String textValue) {
+            this.text = textValue;
+        }
+
+        String getKey() {
+            return this.key;
+        }
+
+        String getText() {
+            return this.text;
+        }
+    }
+
+    static ArrayList<Note> notes = new ArrayList<Note>();
+    static ArrayList<String> notesList = new ArrayList<String>();
+
+    static Gson gson = new Gson();
     static ArrayAdapter<String> arrayAdapter;
     protected ListView listView;
 
@@ -40,18 +77,25 @@ public class MainActivity extends AppCompatActivity {
         // Logic to Retrieve from SharedPrefs
         SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
                 , Context.MODE_PRIVATE);
-        HashSet<String> hash = (HashSet<String>) sharedPreferences.getStringSet("notes" , null);
-        if (hash == null){
+
+        String jsonList = sharedPreferences.getString("notes" , null);
+        if (jsonList == null){
             //Add a sample note
-            notes.add("This is an Example Note");
+            String exampleNote = "This is an Example Note";
+            notes.add(new Note(0, "example", exampleNote));
+            notesList.add(exampleNote);
         }
         else {
-            notes = new ArrayList<>(hash);
+            Type type = new TypeToken<ArrayList<Note>>(){}.getType();
+            notes = gson.fromJson(jsonList, type);
+            for (Note note : notes) {
+                notesList.add(note.getText());
+            }
         }
 
         // Bind ListView with Array Adapter
         listView = (ListView) findViewById(R.id.listView);
-        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, notes);
+        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, notesList);
         listView.setAdapter(arrayAdapter);
     }
 
@@ -90,13 +134,14 @@ public class MainActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialog, int which)
                             {
                                 notes.remove(position);
+                                notesList.remove(position);
                                 arrayAdapter.notifyDataSetChanged();
 
                                 //Add Logic to edit stored Data
                                 SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
                                         , Context.MODE_PRIVATE);
-                                HashSet<String> set = new HashSet<>(com.samsung.smartnotes.MainActivity.notes);
-                                sharedPreferences.edit().putStringSet("notes" , set).apply();
+                                String jsonList = gson.toJson(notes);
+                                sharedPreferences.edit().putString("notes", jsonList).apply();
                             }
                         })
 

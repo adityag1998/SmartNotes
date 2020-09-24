@@ -5,17 +5,29 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:padding="16dp"
     tools:context=".NoteEditorActivity">
 
     <EditText
+        android:id="@+id/editKey"
+        android:layout_width="wrap_content"
+        android:layout_height="56dp"
+        android:layout_margin="10dp"
+        android:ems="10"
+        android:hint="Key (Required)"
+        android:inputType="textPersonName"
+        android:padding="10dp"
+        android:text="" />
+
+    <EditText
+        android:id="@+id/editText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:padding="10dp"
-        android:minLines="2"
         android:maxLines="3"
-        android:id="@+id/editText"
-        android:scrollbars="vertical"
-        />
+        android:minLines="2"
+        android:padding="10dp"
+        android:hint="Note"
+        android:scrollbars="vertical" />
 
 </LinearLayout>
