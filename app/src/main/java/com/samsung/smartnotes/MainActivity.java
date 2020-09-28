@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(getApplicationContext(), com.samsung.smartnotes.NoteEditorActivity.class);
+                Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
                 intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", position); // Which row was tapped
                 startActivity(intent);
             }
