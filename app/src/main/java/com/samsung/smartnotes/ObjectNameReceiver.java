@@ -57,9 +57,9 @@ public class ObjectNameReceiver extends BroadcastReceiver {
         } else {
             Intent floatingServiceIntent = new Intent(context, FloatingPopupService.class);
             floatingServiceIntent.putExtra("objectName", receivedValue);
-            context.startService(floatingServiceIntent);
+            context.startForegroundService(floatingServiceIntent);
+//            Toast.makeText(context, "I passed the Object Name to OverlayPermissionActivity", Toast.LENGTH_LONG).show();
         }
 
-        //Toast.makeText(context, "I passed the Object Name to OverlayPermissionActivity", Toast.LENGTH_LONG).show();
     }
 }

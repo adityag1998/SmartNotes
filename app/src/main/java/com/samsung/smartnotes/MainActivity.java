@@ -4,7 +4,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -30,25 +33,45 @@ public class MainActivity extends AppCompatActivity {
 
     static class Note {
         int id;
-        String key;
+        ArrayList<String> keyList;
         String text;
 
-        public Note(int id, String key, String text) {
+        public Note(int id, ArrayList<String> keyList, String text) {
             this.id = id;
-            this.key = key;
+            this.keyList = new ArrayList<String>();
+            for ( String key : keyList ) {
+                this.keyList.add(key);
+            }
             this.text = text;
         }
 
-        void setKey(String keyValue) {
-            this.key = keyValue;
+        public Note(int id, String key, String text) {
+            this.id = id;
+            this.keyList = new ArrayList<String>();
+            this.keyList.add(key);
+            this.text = text;
+        }
+
+        public Note(int id, String text) {
+            this.id = id;
+            this.keyList = new ArrayList<String>();
+            this.text = text;
+        }
+
+        void addKey(String keyValue) {
+            this.keyList.add(keyValue);
+        }
+
+        void removeKey(String keyValue) {
+            this.keyList.remove(keyValue);
         }
 
         void setText(String textValue) {
             this.text = textValue;
         }
 
-        String getKey() {
-            return this.key;
+        ArrayList<String> getKeys() {
+            return this.keyList;
         }
 
         String getText() {
@@ -60,8 +83,11 @@ public class MainActivity extends AppCompatActivity {
     static ArrayList<String> textList = new ArrayList<String>();
 
     static Gson gson = new Gson();
-    static ArrayAdapter<String> arrayAdapter;
+    static ArrayAdapter<String> arrayAdapter = null;
     protected ListView listView;
+
+    // Request Service Code for Overlay Settings
+    private static final int POPUP_DRAW_OVER_OTHER_APP_PERMISSION = 1001;
 
     protected void showToast (String text){
         Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT).show();
@@ -71,6 +97,23 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //Check if the application has draw over other apps permission or not?
+        //This permission is by default available for API<23. But for API > 23
+        //I will ask for the permission in runtime.
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+//            //Fire Intent to ask permission at runtime
+//            Intent settingIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+//                    Uri.parse("package:" + getPackageName()));
+//            settingIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+//            startActivityForResult(settingIntent, POPUP_DRAW_OVER_OTHER_APP_PERMISSION);
+//        } else {
+//            finish();
+//        }
+
+        //Initialize the NoteEditorActivity variables
+        NoteEditorActivity.isAddingKey = false;
+        NoteEditorActivity.currentNoteID = -1;
 
         if( notesList.size() == 0 ) {
             // Logic to Retrieve from SharedPrefs
@@ -167,6 +210,24 @@ public class MainActivity extends AppCompatActivity {
 
         return false;
     }
+
+    // For Android P or greater, it is not mandatory for settings to return RESULT_OK on settings change
+    // That's why explicit check is made for settings.canDrawOverlays additionally
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        //Check if the permission is granted or not.
+//        if (requestCode == POPUP_DRAW_OVER_OTHER_APP_PERMISSION) {
+//            if (resultCode != RESULT_OK && !Settings.canDrawOverlays(this)) { //Permission is not available
+//                Toast.makeText(this,
+//                        "Draw over other app permission not available. Closing the application",
+//                        Toast.LENGTH_SHORT).show();
+//                finish(); // Destroy Activity without doing anything
+//            }
+//
+//        } else {
+//            super.onActivityResult(requestCode, resultCode, data);
+//        }
+//    }
 
     @Override
     protected void onDestroy() {
