@@ -1,6 +1,7 @@
 package com.samsung.smartnotes;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -131,8 +133,12 @@ public class NoteEditorActivity extends AppCompatActivity {
                 isAddingKey = true;
                 currentNoteID = noteID;
                 Intent cameraIntent = getPackageManager().getLaunchIntentForPackage("com.example.dummycamera");
-                startActivity(cameraIntent);
-                finish();
+                if(cameraIntent != null) {
+                    startActivity(cameraIntent);
+                    finish();
+                } else {
+                    Toast.makeText(getBaseContext(), "Camera app not found", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -150,6 +156,7 @@ public class NoteEditorActivity extends AppCompatActivity {
                 MainActivity.notesList.get(noteID).addKey(newKey);
                 keyList.add(newKey);
                 mAdapter.notifyDataSetChanged();
+                editKey.setText("");
             }
         });
 
@@ -223,10 +230,24 @@ public class NoteEditorActivity extends AppCompatActivity {
             view.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    int position = getAdapterPosition();
-                    keyList.remove(position);
-                    MainActivity.notesList.get(noteID).getKeys().remove(position);
-                    mAdapter.notifyDataSetChanged();
+
+                    new AlertDialog.Builder(NoteEditorActivity.this)
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .setTitle("Delete")
+                            .setMessage("Are you sure you want to delete this note?")
+                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which)
+                                {
+                                    int position = getAdapterPosition();
+                                    keyList.remove(position);
+                                    MainActivity.notesList.get(noteID).getKeys().remove(position);
+                                    mAdapter.notifyDataSetChanged();
+                                }
+                            })
+                            .setNegativeButton("No", null)
+                            .show();
+
                     return true;
                 }
             });
