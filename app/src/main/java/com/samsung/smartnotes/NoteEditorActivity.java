@@ -24,6 +24,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +64,7 @@ public class NoteEditorActivity extends AppCompatActivity {
         final EditText editKey = (EditText) findViewById(R.id.editKey);
         cameraButton = (Button) findViewById(R.id.cameraButton);
         addButton = (Button) findViewById(R.id.addButton);
-        addButton = (Button) findViewById(R.id.addButton);
+        TextView tfidfView = (TextView) findViewById(R.id.textViewTfidf);
 
         //Bind keyList to recycler view, we have to bind it after initialization because we cannot bind null keyList to KeyAdapter
         RecyclerView recyclerView = findViewById(R.id.keyRecyclerView);
@@ -107,6 +109,10 @@ public class NoteEditorActivity extends AppCompatActivity {
             noteID = MainActivity.notesList.size() - 1;
         }
 
+        if(MainActivity.notesList.get(noteID).getTermTfidfMap() != null) {
+            tfidfView.setText(MainActivity.notesList.get(noteID).getTermTfidfMap().toString());
+        }
+
 
         //Change Note when text has been edited
         editText.addTextChangedListener(new TextWatcher() {
@@ -119,6 +125,7 @@ public class NoteEditorActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 MainActivity.textList.set(noteID, String.valueOf(s));
                 MainActivity.notesList.get(noteID).setText(String.valueOf(s));
+                MainActivity.notesList.get(noteID).isTfidfUpdated = false;
             }
 
             @Override
@@ -182,12 +189,16 @@ public class NoteEditorActivity extends AppCompatActivity {
             MainActivity.textList.remove(noteID);
             MainActivity.notesList.remove(noteID);
         } else {
-            //Add Logic to store Data
-            SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
-                    , Context.MODE_PRIVATE);
-            String jsonList = MainActivity.gson.toJson(MainActivity.notesList);
-            sharedPreferences.edit().putString("notes", jsonList).apply();
+            // Calculate Tfidf for this note.
+            TfidfCalculation.updateNoteTfidf(MainActivity.notesList.get(noteID));
         }
+
+        // Add Logic to store Data
+        SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
+                , Context.MODE_PRIVATE);
+        String jsonList = MainActivity.gson.toJson(MainActivity.notesList);
+        sharedPreferences.edit().putString("notes", jsonList).apply();
+
         if(MainActivity.arrayAdapter != null) {
             MainActivity.arrayAdapter.notifyDataSetChanged();
         }

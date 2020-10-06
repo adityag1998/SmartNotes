@@ -69,6 +69,12 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/textViewTfidf"
+        android:layout_width="match_parent"
+        android:layout_height="129dp"
+        android:layout_margin="15dp"
+        android:text="TextView" />
 
 
 </LinearLayout>

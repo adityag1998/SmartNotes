@@ -27,6 +27,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -35,6 +36,12 @@ public class MainActivity extends AppCompatActivity {
         int id;
         ArrayList<String> keyList;
         String text;
+
+        public boolean isTermMapsUpdated = false;
+        public boolean isTfidfUpdated = false;
+        HashMap<String, Integer> termCountMap;
+        HashMap<String, Double> termFreqMap;
+        HashMap<String, Double> termTfidfMap;
 
         public Note(int id, ArrayList<String> keyList, String text) {
             this.id = id;
@@ -76,6 +83,31 @@ public class MainActivity extends AppCompatActivity {
 
         String getText() {
             return this.text;
+        }
+
+
+        HashMap<String, Integer> getTermCounts() {
+            return this.termCountMap;
+        }
+
+        HashMap<String,Double> getTermFreqMap() {
+            return this.termFreqMap;
+        }
+
+        HashMap<String,Double> getTermTfidfMap() {
+            return this.termTfidfMap;
+        }
+
+        void setTermCounts(HashMap<String, Integer> inMap) {
+            this.termCountMap = new HashMap<String, Integer>(inMap);
+        }
+
+        void setTermFreqMap(HashMap<String, Double> inMap) {
+            this.termFreqMap = new HashMap<String, Double>(inMap);
+        }
+
+        void setTermTfidfMap(HashMap<String, Double> inMap) {
+            this.termTfidfMap = new HashMap<String, Double>(inMap);
         }
     }
 
@@ -140,6 +172,9 @@ public class MainActivity extends AppCompatActivity {
         listView = (ListView) findViewById(R.id.listView);
         arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, textList);
         listView.setAdapter(arrayAdapter);
+
+        TfidfCalculation.updateAllTfidf();
+        //TfidfCalculation.recalculateAllTfidf();
     }
 
     @Override
