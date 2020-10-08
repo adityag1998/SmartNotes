@@ -11,11 +11,11 @@
     <EditText
         android:id="@+id/editText"
         android:layout_width="match_parent"
-        android:layout_height="86dp"
+        android:layout_height="270dp"
         android:layout_margin="10dp"
         android:hint="Note"
-        android:maxLines="3"
-        android:minLines="2"
+        android:maxLines="10"
+        android:minLines="10"
         android:padding="10dp"
         android:scrollbars="vertical" />
 

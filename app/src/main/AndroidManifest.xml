@@ -25,7 +25,7 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.example.dummycamera.receive_object_name" />
+                <action android:name="com.samsung.navicam.parse_bundle" />
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>

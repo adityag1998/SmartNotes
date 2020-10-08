@@ -3,6 +3,7 @@ package com.samsung.smartnotes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -12,15 +13,18 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,16 +32,26 @@ import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static com.samsung.smartnotes.MainActivity.notesList;
+
 
 public class NoteEditorActivity extends AppCompatActivity {
 
+    public static final String TAG = "NoteEditorActivityLogs";
     public static boolean isAddingKey = false;
     public static int currentNoteID = -1;
     static Button cameraButton;
     static Button addButton;
+    static RecyclerView recyclerView;
+
+    static ArrayList<String> topTwoKeys;
+    static List<String> keysAdded;
 
     int noteID;
-    String keyValue;
+    String keyValueFromService;
+    String textValueFromService;
     public List<String> keyList;
     KeyAdapter mAdapter;
 
@@ -54,7 +68,8 @@ public class NoteEditorActivity extends AppCompatActivity {
         //Logic to Receive Intent
         Intent intent = getIntent();
         noteID = intent.getIntExtra("com.samsung.smartnotes.MainActivity.noteID" , -1);
-        keyValue = intent.getStringExtra("keyValue");
+        keyValueFromService = intent.getStringExtra("keyValue");
+        textValueFromService = intent.getStringExtra("textValue");
 
         //Initialize keyList Array
         keyList = new ArrayList<>();
@@ -67,7 +82,7 @@ public class NoteEditorActivity extends AppCompatActivity {
         TextView tfidfView = (TextView) findViewById(R.id.textViewTfidf);
 
         //Bind keyList to recycler view, we have to bind it after initialization because we cannot bind null keyList to KeyAdapter
-        RecyclerView recyclerView = findViewById(R.id.keyRecyclerView);
+        recyclerView = findViewById(R.id.keyRecyclerView);
         mAdapter = new KeyAdapter(keyList);
         LinearLayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         mLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
@@ -79,40 +94,48 @@ public class NoteEditorActivity extends AppCompatActivity {
         // If Note is existing edit the note
         if (noteID != -1){
             editText.setText(MainActivity.textList.get(noteID));
-            addAllKeysToList(MainActivity.notesList.get(noteID).getKeys());
+            addAllKeysToList(notesList.get(noteID).getKeys());
             mAdapter.notifyDataSetChanged();
-            if(isAddingKey && keyValue != null) {
-                if(keyList.contains(keyValue)) { // TAG already present
-                    Toast.makeText(this, "TAG already present", Toast.LENGTH_LONG).show();
-                } else {
-                    keyList.add(keyValue);
-                    mAdapter.notifyDataSetChanged();
-                    MainActivity.notesList.get(noteID).addKey(keyValue);
-                }
+            if(isAddingKey && keyValueFromService != null) {
+                addProvidedKeyToList(keyValueFromService);
             }
             isAddingKey = false;
             currentNoteID = -1;
+
+            if(!notesList.get(noteID).isTfidfUpdated) {
+                TfidfCalculation.recalculateAllTfidf();
+            }
         }
+
         else // create a new note
         {
-            if(keyValue != null) {  // check if new note is created from camera intent
-                keyList.add(keyValue);
+            if(keyValueFromService != null) {  // check if new note is created from camera intent
+                keyList.add(keyValueFromService.toLowerCase());
                 mAdapter.notifyDataSetChanged();
-                MainActivity.notesList.add(new MainActivity.Note(MainActivity.textList.size(), keyValue, ""));
+                notesList.add(new MainActivity.Note(MainActivity.textList.size(), keyValueFromService.toLowerCase(), ""));
+                MainActivity.textList.add("");
+            } else if (textValueFromService != null && textValueFromService.length()>0) {
+                editText.setText(textValueFromService);
+                notesList.add(new MainActivity.Note(MainActivity.textList.size(), textValueFromService));
+                MainActivity.textList.add(textValueFromService);
             } else {
-                MainActivity.notesList.add(new MainActivity.Note(MainActivity.textList.size(), ""));
+                notesList.add(new MainActivity.Note(MainActivity.textList.size(), ""));
+                MainActivity.textList.add("");
             }
             isAddingKey = false;
             currentNoteID = -1;
 
-            MainActivity.textList.add("");                // as initially, the note is empty
-            noteID = MainActivity.notesList.size() - 1;
+                           // as initially, the note is empty
+            noteID = notesList.size() - 1;
         }
 
-        if(MainActivity.notesList.get(noteID).getTermTfidfMap() != null) {
-            tfidfView.setText(MainActivity.notesList.get(noteID).getTermTfidfMap().toString());
+        if(notesList.get(noteID).getTermTfidfMap() != null) {
+            tfidfView.setText(notesList.get(noteID).getTermTfidfMap().toString());
         }
 
+        // Add smart Keys
+        addSmartKeys();
+        mAdapter.notifyDataSetChanged();
 
         //Change Note when text has been edited
         editText.addTextChangedListener(new TextWatcher() {
@@ -124,8 +147,8 @@ public class NoteEditorActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 MainActivity.textList.set(noteID, String.valueOf(s));
-                MainActivity.notesList.get(noteID).setText(String.valueOf(s));
-                MainActivity.notesList.get(noteID).isTfidfUpdated = false;
+                notesList.get(noteID).setText(String.valueOf(s));
+                notesList.get(noteID).isTfidfUpdated = false;
             }
 
             @Override
@@ -139,7 +162,7 @@ public class NoteEditorActivity extends AppCompatActivity {
             public void onClick(View v) {
                 isAddingKey = true;
                 currentNoteID = noteID;
-                Intent cameraIntent = getPackageManager().getLaunchIntentForPackage("com.example.dummycamera");
+                Intent cameraIntent = getPackageManager().getLaunchIntentForPackage("com.samsung.navicam");
                 if(cameraIntent != null) {
                     startActivity(cameraIntent);
                     finish();
@@ -153,22 +176,47 @@ public class NoteEditorActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String newKey = String.valueOf(editKey.getText());
-                for (String key : keyList) {
-                    if (key.toLowerCase().equals(newKey.toLowerCase())) {
-                        Toast.makeText(getBaseContext(), "TAG already present", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                }
+                addProvidedKeyToList(newKey);
 
-                MainActivity.notesList.get(noteID).addKey(newKey);
-                keyList.add(newKey);
-                mAdapter.notifyDataSetChanged();
                 editKey.setText("");
             }
         });
 
+    }
 
+    public void addProvidedKeyToList(String key) {
+        key = key.toLowerCase();
+        if(key.split(" ").length == 0)
+            return;
+        if(notesList.get(noteID).getKeys().contains(key)) {
+            Toast.makeText(this, "TAG already present", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
+        while(keyList.size() != notesList.get(noteID).getKeys().size()) {
+            keyList.remove(notesList.get(noteID).getKeys().size());
+        }
+
+        // now add the new key
+        keyList.add(key);
+        //mAdapter.notifyDataSetChanged();
+        notesList.get(noteID).addKey(key);
+
+        // now add smartKeys to the list
+        addSmartKeys();
+        recyclerView.invalidate();
+        mAdapter.notifyDataSetChanged();
+    }
+
+    public void addSmartKeys() {
+        Log.d(TAG, "TopTwoTerms list is : " + notesList.get(noteID).getBlackListTerms().toString() );
+        for(String keys : notesList.get(noteID).getTopTwoTerms()) {
+            if(!keyList.contains(keys) && !notesList.get(noteID).getBlackListTerms().contains(keys)){
+                keyList.add(keys);
+                // mAdapter.notifyDataSetChanged();
+            }
+        }
+        // mAdapter.notifyDataSetChanged();
     }
 
     public void addAllKeysToList(ArrayList<String> inputKeyList) {
@@ -181,22 +229,43 @@ public class NoteEditorActivity extends AppCompatActivity {
         //mAdapter.notifyDataSetChanged();
     }
 
+    public void checkAndRemoveBlacklistedTerms() {
+        ArrayList<String> tempList = new ArrayList<>();
+
+        for (String term : notesList.get(noteID).getBlackListTerms()) {
+            tempList.add(term);
+        }
+
+        for (String term : tempList) {
+            if(!notesList.get(noteID).getTermCounts().keySet().contains(term)) {
+                notesList.get(noteID).getBlackListTerms().remove(term);
+            }
+        }
+    }
+
 
     @Override
     protected void onDestroy() {
-        if(MainActivity.notesList.get(noteID).getKeys().size() == 0 && MainActivity.textList.get(noteID) == "") {
+        if(notesList.get(noteID).getKeys().size() == 0 && MainActivity.textList.get(noteID) == "") {
             // delete created note
             MainActivity.textList.remove(noteID);
-            MainActivity.notesList.remove(noteID);
+            notesList.remove(noteID);
         } else {
             // Calculate Tfidf for this note.
-            TfidfCalculation.updateNoteTfidf(MainActivity.notesList.get(noteID));
+            notesList.get(noteID).isTermMapsUpdated = false;
+            notesList.get(noteID).isTfidfUpdated = false;
+
+            // TODO: We can optimize the code here to check if the terms array has changed or not to do the calculations again.
+            TfidfCalculation.recalculateAllTfidf();
+
+            // Check and remove all blacklisted items if removed from note.
+            checkAndRemoveBlacklistedTerms();
         }
 
         // Add Logic to store Data
         SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
                 , Context.MODE_PRIVATE);
-        String jsonList = MainActivity.gson.toJson(MainActivity.notesList);
+        String jsonList = MainActivity.gson.toJson(notesList);
         sharedPreferences.edit().putString("notes", jsonList).apply();
 
         if(MainActivity.arrayAdapter != null) {
@@ -205,6 +274,12 @@ public class NoteEditorActivity extends AppCompatActivity {
 
         super.onDestroy();
     }
+
+//    public void reloadAllRecyclerViewData() {
+//        mAdapter.getData().clear();
+//        mAdapter.getData().addAll(keyList);
+//        mAdapter.notifyDataSetChanged();
+//    }
 
     public class KeyAdapter extends RecyclerView.Adapter<MyViewHolder> {
         private List<String> keyList;
@@ -223,6 +298,9 @@ public class NoteEditorActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(MyViewHolder holder, int position) {
             String keyVal = keyList.get(position);
+            if(position >= notesList.get(noteID).getKeys().size()) {
+                holder.keyParent.setBackgroundColor(Color.parseColor("#fec001"));
+            }
             holder.key.setText(keyVal);
         }
 
@@ -230,17 +308,24 @@ public class NoteEditorActivity extends AppCompatActivity {
         public int getItemCount() {
             return keyList.size();
         }
+
+        public List<String> getData() {
+            return this.keyList;
+        }
     }
 
     class MyViewHolder extends RecyclerView.ViewHolder {
         TextView key;
+        LinearLayout keyParent;
         MyViewHolder(View view) {
             super(view);
             key = view.findViewById(R.id.keyValue);
+            keyParent = view.findViewById(R.id.keyParent);
 
             view.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
+                    final int position = getAdapterPosition();
 
                     new AlertDialog.Builder(NoteEditorActivity.this)
                             .setIcon(android.R.drawable.ic_dialog_alert)
@@ -250,10 +335,15 @@ public class NoteEditorActivity extends AppCompatActivity {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which)
                                 {
-                                    int position = getAdapterPosition();
-                                    keyList.remove(position);
-                                    MainActivity.notesList.get(noteID).getKeys().remove(position);
-                                    mAdapter.notifyDataSetChanged();
+                                    if(position >= notesList.get(noteID).getKeys().size()) {
+                                        notesList.get(noteID).getBlackListTerms().add(keyList.get(position));
+                                        keyList.remove(position);
+                                        mAdapter.notifyDataSetChanged();
+                                    } else {
+                                        notesList.get(noteID).getKeys().remove(position);
+                                        keyList.remove(position);
+                                        mAdapter.notifyDataSetChanged();
+                                    }
                                 }
                             })
                             .setNegativeButton("No", null)

@@ -2,6 +2,7 @@ package com.samsung.smartnotes;
 
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,19 +54,59 @@ public class TfidfCalculation {
         return false;
     }
 
+    public static ArrayList<String> getTopTwoTerms(MainActivity.Note note) {
+        ArrayList<String> topTwo= new ArrayList<String>();
+        HashMap<String,Double> map = note.getTermTfidfMap();
+
+        if( map== null || map.size() == 0 ) return topTwo;
+
+        double max = -1;
+        double secondMax = -1;
+        String maxTerm = null;
+        String secondMaxTerm = null;
+        for(String term : map.keySet()) {
+            if(map.get(term) > max) {
+                max = map.get(term);
+                maxTerm = term;
+            }
+        }
+        topTwo.add(maxTerm);
+        if(map.size() == 1) return topTwo;
+
+        for(String term : map.keySet()) {
+            if((map.get(term) > secondMax) && (map.get(term) <= max) && (!term.equals(maxTerm))) {
+                secondMax = map.get(term);
+                secondMaxTerm = term;
+            }
+        }
+        topTwo.add(secondMaxTerm);
+        return topTwo;
+    }
+
+    public static void updateTopTwoTerms(MainActivity.Note note) {
+        note.setTopTwoTerms(getTopTwoTerms(note));
+    }
+
+    public static void updateAllTopTwoTerms() {
+        for (MainActivity.Note note : MainActivity.notesList) {
+            updateTopTwoTerms(note);
+        }
+    }
+
     public static void updateTermMaps(MainActivity.Note note) {
         HashMap<String,Integer> wordCount = new HashMap<String,Integer>();
         HashMap<String,Double> termFreq = new HashMap<String,Double>();
 
         // pre-process note string
         String text = note.getText().toLowerCase();
-        if (text.equals("")) {
-            note.isTermMapsUpdated = true;
-            return;
-        }
         text = preProcessText(text);
         String[] words = text.split(" ");
 
+        // if words are not there, exit
+        if (words.length == 0) {
+            note.isTermMapsUpdated = true;
+            return;
+        }
 
         // update termCountMap
         for(String term : words) {
@@ -103,8 +144,8 @@ public class TfidfCalculation {
 
     public static HashMap<String, Double> calculateInverseDocFrequency(MainActivity.Note note) {
         HashMap<String, Double> idfMap = new HashMap<>();
-        int size = MainActivity.notesList.size();
-        int termCount = 0;
+        int size = MainActivity.notesList.size();  // Considering even empty notes will affect the idf value.
+        int termCount;
         double idf;
         int totalCorpusSize = 0;
 
@@ -140,6 +181,10 @@ public class TfidfCalculation {
         if(!note.isTermMapsUpdated) {
             updateTermMaps(note);
         }
+        if(note.getTermFreqMap().size() == 0) {
+            note.isTfidfUpdated = true;
+            return;
+        }
 
         // calculate inverse doc freq
         HashMap<String,Double> idfMap = calculateInverseDocFrequency(note);
@@ -161,8 +206,10 @@ public class TfidfCalculation {
         }
         note.setTermTfidfMap(tfidfMap);
         note.isTfidfUpdated = true;
+        updateTopTwoTerms(note);
     }
 
+    // this function will not provide correct results as a single word change will cause change in all idf values.
     public static void updateAllTfidf() {
         for(MainActivity.Note note : MainActivity.notesList) {
             if(!note.isTfidfUpdated) {
@@ -172,6 +219,10 @@ public class TfidfCalculation {
     }
 
     public static void recalculateAllTfidf() {
+        for(MainActivity.Note note : MainActivity.notesList) {
+            if(!note.isTermMapsUpdated)
+                updateTermMaps(note);
+        }
         for(MainActivity.Note note : MainActivity.notesList) {
             updateNoteTfidf(note);
         }

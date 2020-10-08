@@ -37,11 +37,15 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<String> keyList;
         String text;
 
+        ArrayList<String> topTwoTerms = new ArrayList<>();
+        ArrayList<String> blackListTerms = new ArrayList<>();
+
         public boolean isTermMapsUpdated = false;
         public boolean isTfidfUpdated = false;
-        HashMap<String, Integer> termCountMap;
-        HashMap<String, Double> termFreqMap;
-        HashMap<String, Double> termTfidfMap;
+        HashMap<String, Integer> termCountMap = new HashMap<>();
+        HashMap<String, Double> termFreqMap = new HashMap<>();
+        HashMap<String, Double> termTfidfMap = new HashMap<>();
+
 
         public Note(int id, ArrayList<String> keyList, String text) {
             this.id = id;
@@ -98,6 +102,13 @@ public class MainActivity extends AppCompatActivity {
             return this.termTfidfMap;
         }
 
+        ArrayList<String> getTopTwoTerms() {
+            return this.topTwoTerms;
+        }
+        ArrayList<String> getBlackListTerms() {
+            return this.blackListTerms;
+        }
+
         void setTermCounts(HashMap<String, Integer> inMap) {
             this.termCountMap = new HashMap<String, Integer>(inMap);
         }
@@ -108,6 +119,10 @@ public class MainActivity extends AppCompatActivity {
 
         void setTermTfidfMap(HashMap<String, Double> inMap) {
             this.termTfidfMap = new HashMap<String, Double>(inMap);
+        }
+
+        void setTopTwoTerms(ArrayList<String> inArr) {
+            this.topTwoTerms = new ArrayList<>(inArr);
         }
     }
 
@@ -173,8 +188,8 @@ public class MainActivity extends AppCompatActivity {
         arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, textList);
         listView.setAdapter(arrayAdapter);
 
-        TfidfCalculation.updateAllTfidf();
-        //TfidfCalculation.recalculateAllTfidf();
+        //TfidfCalculation.updateAllTfidf();
+        TfidfCalculation.recalculateAllTfidf();
     }
 
     @Override

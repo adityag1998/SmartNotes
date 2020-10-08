@@ -38,18 +38,83 @@
         </TextView>
     </RelativeLayout>
 
-    <TextView
+    <LinearLayout
+        android:id="@+id/optionsParentView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:singleLine="true"
-        android:layout_margin="10dp"
-        android:padding="10dp"
-        android:text="CREATE NEW NOTE"
-        android:background="@android:color/black"
-        android:textColor="@android:color/white"
-        android:layout_gravity="center_vertical"
-        android:id="@+id/note_name_text">
-    </TextView>
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/threeParentView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:layout_margin="@dimen/margin"
+                android:padding="@dimen/padding"
+                android:text="New note with TAG"
+                android:background="@android:color/black"
+                android:textColor="@android:color/white"
+                android:layout_gravity="center_vertical"
+                android:id="@+id/keyNote">
+            </TextView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:layout_margin="@dimen/margin"
+                android:padding="@dimen/padding"
+                android:text="New note with Text"
+                android:background="@android:color/black"
+                android:textColor="@android:color/white"
+                android:layout_gravity="center_vertical"
+                android:id="@+id/textNote">
+            </TextView>
+
+
+            <ListView
+                android:id="@+id/openNoteList"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/margin"
+                android:padding="@dimen/padding"
+                android:background="@android:color/black">
+            </ListView>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/fullListView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@android:color/black"
+            android:padding="@dimen/padding"
+            android:layout_margin="@dimen/margin">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_margin="@dimen/margin"
+                android:src="@drawable/ic_menu_back"
+                android:id="@+id/click_to_back">
+            </ImageView>
+
+            <ListView
+                android:id="@+id/floatingListView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+            </ListView>
+
+        </LinearLayout>
+    </LinearLayout>
 
 </LinearLayout>

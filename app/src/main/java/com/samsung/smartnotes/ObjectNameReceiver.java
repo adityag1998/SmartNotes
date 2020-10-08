@@ -6,16 +6,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 
 
 public class ObjectNameReceiver extends BroadcastReceiver {
     private static final String TAG = "ObjectNameReceiver";
     private static final String KEY = "com.example.dummycamera.objectName";
+    protected static final String KEY1 = "com.samsung.navicam.objectList";
+    protected static final String KEY2 = "com.samsung.navicam.text";
 
     // Request Service Code for Overlay Settings
     private static final int POPUP_DRAW_OVER_OTHER_APP_PERMISSION = 1001;
@@ -38,9 +42,12 @@ public class ObjectNameReceiver extends BroadcastReceiver {
 //        Toast.makeText(context, log, Toast.LENGTH_LONG).show();
 //        Log.d(TAG, log);
 
-
         receivedAction = intent.getAction();
-        receivedValue = intent.getStringExtra(KEY);
+        // receivedValue = intent.getStringExtra(KEY);
+        Bundle bundle = intent.getExtras();
+
+        ArrayList<String> objectList = (ArrayList<String>) bundle.getSerializable(KEY1);
+        String text = (String) bundle.getSerializable(KEY2);
 
 
 //        Intent overlayIntent = new Intent();
@@ -56,7 +63,8 @@ public class ObjectNameReceiver extends BroadcastReceiver {
             context.startActivity(overlayPermissionIntent);
         } else {
             Intent floatingServiceIntent = new Intent(context, FloatingPopupService.class);
-            floatingServiceIntent.putExtra("objectName", receivedValue);
+            floatingServiceIntent.putExtra("objectNames", objectList);
+            floatingServiceIntent.putExtra("text", text);
             context.startForegroundService(floatingServiceIntent);
 //            Toast.makeText(context, "I passed the Object Name to OverlayPermissionActivity", Toast.LENGTH_LONG).show();
         }
