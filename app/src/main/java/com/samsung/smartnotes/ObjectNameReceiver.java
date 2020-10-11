@@ -19,7 +19,7 @@ public class ObjectNameReceiver extends BroadcastReceiver {
     private static final String TAG = "ObjectNameReceiver";
     private static final String KEY = "com.example.dummycamera.objectName";
     protected static final String KEY1 = "com.samsung.navicam.objectList";
-    protected static final String KEY2 = "com.samsung.navicam.text";
+    protected static final String KEY2 = "com.samsung.navicam.blockWiseTextList";
 
     // Request Service Code for Overlay Settings
     private static final int POPUP_DRAW_OVER_OTHER_APP_PERMISSION = 1001;
@@ -47,7 +47,7 @@ public class ObjectNameReceiver extends BroadcastReceiver {
         Bundle bundle = intent.getExtras();
 
         ArrayList<String> objectList = (ArrayList<String>) bundle.getSerializable(KEY1);
-        String text = (String) bundle.getSerializable(KEY2);
+        ArrayList<String> text = (ArrayList<String>) bundle.getSerializable(KEY2);
 
 
 //        Intent overlayIntent = new Intent();

@@ -19,7 +19,7 @@
         <ImageView
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:src="@drawable/ic_circle_head"
+            android:src="@drawable/ic_circle"
             android:id="@+id/object_name_circle">
         </ImageView>
         <TextView
@@ -59,7 +59,7 @@
                 android:layout_margin="@dimen/margin"
                 android:padding="@dimen/padding"
                 android:text="New note with TAG"
-                android:background="@android:color/black"
+                android:background="@color/transparentBlack"
                 android:textColor="@android:color/white"
                 android:layout_gravity="center_vertical"
                 android:id="@+id/keyNote">
@@ -73,7 +73,7 @@
                 android:layout_margin="@dimen/margin"
                 android:padding="@dimen/padding"
                 android:text="New note with Text"
-                android:background="@android:color/black"
+                android:background="@color/transparentBlack"
                 android:textColor="@android:color/white"
                 android:layout_gravity="center_vertical"
                 android:id="@+id/textNote">
@@ -86,7 +86,20 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/margin"
                 android:padding="@dimen/padding"
-                android:background="@android:color/black">
+                android:background="@color/transparentBlack"
+                android:divider="@android:color/black"
+                android:dividerHeight="1px">
+            </ListView>
+
+            <ListView
+                android:id="@+id/addKeyList"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/margin"
+                android:padding="@dimen/padding"
+                android:background="@color/transparentBlack"
+                android:divider="@android:color/black"
+                android:dividerHeight="1px">
             </ListView>
 
         </LinearLayout>
@@ -96,7 +109,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@android:color/black"
+            android:background="@color/transparentBlack"
             android:padding="@dimen/padding"
             android:layout_margin="@dimen/margin">
 
@@ -111,7 +124,9 @@
             <ListView
                 android:id="@+id/floatingListView"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:divider="@android:color/black"
+                android:dividerHeight="1px">
             </ListView>
 
         </LinearLayout>

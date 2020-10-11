@@ -21,6 +21,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -130,8 +133,8 @@ public class MainActivity extends AppCompatActivity {
     static ArrayList<String> textList = new ArrayList<String>();
 
     static Gson gson = new Gson();
-    static ArrayAdapter<String> arrayAdapter = null;
-    protected ListView listView;
+    static NoteAdapter mNoteAdapter;
+    protected RecyclerView noteRecyclerView;
 
     // Request Service Code for Overlay Settings
     private static final int POPUP_DRAW_OVER_OTHER_APP_PERMISSION = 1001;
@@ -144,19 +147,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        //Check if the application has draw over other apps permission or not?
-        //This permission is by default available for API<23. But for API > 23
-        //I will ask for the permission in runtime.
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-//            //Fire Intent to ask permission at runtime
-//            Intent settingIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-//                    Uri.parse("package:" + getPackageName()));
-//            settingIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-//            startActivityForResult(settingIntent, POPUP_DRAW_OVER_OTHER_APP_PERMISSION);
-//        } else {
-//            finish();
-//        }
 
         //Initialize the NoteEditorActivity variables
         NoteEditorActivity.isAddingKey = false;
@@ -184,9 +174,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Bind ListView with Array Adapter
-        listView = (ListView) findViewById(R.id.listView);
-        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, textList);
-        listView.setAdapter(arrayAdapter);
+        noteRecyclerView = findViewById(R.id.recyclerView);
+        mNoteAdapter = new NoteAdapter(textList);
+        noteRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        noteRecyclerView.setAdapter(mNoteAdapter);
 
         //TfidfCalculation.updateAllTfidf();
         TfidfCalculation.recalculateAllTfidf();
@@ -197,9 +188,9 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         //Add listener to ListView and send local Intent on position of listView
-        listView.setOnItemClickListener(new OnItemClickListener() {
+        mNoteAdapter.setmOnItemClickListener(new NoteAdapter.onItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(View v, int position) {
                 Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
                 intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", position); // Which row was tapped
                 startActivity(intent);
@@ -207,10 +198,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Add listener to listView and Long Click to delete
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        mNoteAdapter.setmOnItemLongClickListener(new NoteAdapter.onItemLongClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id)
-            {
+            public boolean onItemLongClick(View v, int position) {
+                final int mPosition = position;
                 new AlertDialog.Builder(MainActivity.this)
                         .setIcon(android.R.drawable.ic_dialog_alert)
                         .setTitle("Delete")
@@ -219,9 +210,9 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which)
                             {
-                                notesList.remove(position);
-                                textList.remove(position);
-                                arrayAdapter.notifyDataSetChanged();
+                                notesList.remove(mPosition);
+                                textList.remove(mPosition);
+                                mNoteAdapter.notifyDataSetChanged();
 
                                 //Add Logic to edit stored Data
                                 SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
@@ -260,24 +251,6 @@ public class MainActivity extends AppCompatActivity {
 
         return false;
     }
-
-    // For Android P or greater, it is not mandatory for settings to return RESULT_OK on settings change
-    // That's why explicit check is made for settings.canDrawOverlays additionally
-//    @Override
-//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        //Check if the permission is granted or not.
-//        if (requestCode == POPUP_DRAW_OVER_OTHER_APP_PERMISSION) {
-//            if (resultCode != RESULT_OK && !Settings.canDrawOverlays(this)) { //Permission is not available
-//                Toast.makeText(this,
-//                        "Draw over other app permission not available. Closing the application",
-//                        Toast.LENGTH_SHORT).show();
-//                finish(); // Destroy Activity without doing anything
-//            }
-//
-//        } else {
-//            super.onActivityResult(requestCode, resultCode, data);
-//        }
-//    }
 
     @Override
     protected void onDestroy() {

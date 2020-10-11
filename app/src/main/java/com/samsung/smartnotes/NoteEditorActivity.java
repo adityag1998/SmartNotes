@@ -3,8 +3,6 @@ package com.samsung.smartnotes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,18 +19,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static com.samsung.smartnotes.MainActivity.notesList;
 
@@ -51,7 +45,7 @@ public class NoteEditorActivity extends AppCompatActivity {
 
     int noteID;
     String keyValueFromService;
-    String textValueFromService;
+    ArrayList<String> textListFromService;
     public List<String> keyList;
     KeyAdapter mAdapter;
 
@@ -69,7 +63,7 @@ public class NoteEditorActivity extends AppCompatActivity {
         Intent intent = getIntent();
         noteID = intent.getIntExtra("com.samsung.smartnotes.MainActivity.noteID" , -1);
         keyValueFromService = intent.getStringExtra("keyValue");
-        textValueFromService = intent.getStringExtra("textValue");
+        textListFromService = intent.getStringArrayListExtra("textValue");
 
         //Initialize keyList Array
         keyList = new ArrayList<>();
@@ -87,8 +81,11 @@ public class NoteEditorActivity extends AppCompatActivity {
         LinearLayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         mLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         recyclerView.setLayoutManager(mLayoutManager);
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(mAdapter);
+        RecyclerView.ItemAnimator itemAnimator = new DefaultItemAnimator();
+        itemAnimator.setAddDuration(1000);
+        itemAnimator.setRemoveDuration(1000);
+        recyclerView.setItemAnimator(itemAnimator);
 
 
         // If Note is existing edit the note
@@ -114,10 +111,11 @@ public class NoteEditorActivity extends AppCompatActivity {
                 mAdapter.notifyDataSetChanged();
                 notesList.add(new MainActivity.Note(MainActivity.textList.size(), keyValueFromService.toLowerCase(), ""));
                 MainActivity.textList.add("");
-            } else if (textValueFromService != null && textValueFromService.length()>0) {
-                editText.setText(textValueFromService);
-                notesList.add(new MainActivity.Note(MainActivity.textList.size(), textValueFromService));
-                MainActivity.textList.add(textValueFromService);
+            } else if (textListFromService != null && textListFromService.size()>0) {
+                String processedText = processTextList(textListFromService);
+                editText.setText(processedText);
+                notesList.add(new MainActivity.Note(MainActivity.textList.size(), processedText));
+                MainActivity.textList.add(processedText);
             } else {
                 notesList.add(new MainActivity.Note(MainActivity.textList.size(), ""));
                 MainActivity.textList.add("");
@@ -184,9 +182,21 @@ public class NoteEditorActivity extends AppCompatActivity {
 
     }
 
+    public String processTextList(ArrayList<String> inputList) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : inputList) {
+            if(line.length() > 0) {
+                sb.append(line);
+                if(!line.equals(inputList.get(inputList.size() - 1)))
+                    sb.append("\n\n\n");
+            }
+        }
+        return sb.toString();
+    }
+
     public void addProvidedKeyToList(String key) {
         key = key.toLowerCase();
-        if(key.split(" ").length == 0)
+        if(key.replaceAll(" ", "").length() == 0)
             return;
         if(notesList.get(noteID).getKeys().contains(key)) {
             Toast.makeText(this, "TAG already present", Toast.LENGTH_SHORT).show();
@@ -268,8 +278,8 @@ public class NoteEditorActivity extends AppCompatActivity {
         String jsonList = MainActivity.gson.toJson(notesList);
         sharedPreferences.edit().putString("notes", jsonList).apply();
 
-        if(MainActivity.arrayAdapter != null) {
-            MainActivity.arrayAdapter.notifyDataSetChanged();
+        if(MainActivity.mNoteAdapter != null) {
+            MainActivity.mNoteAdapter.notifyDataSetChanged();
         }
 
         super.onDestroy();
@@ -300,6 +310,8 @@ public class NoteEditorActivity extends AppCompatActivity {
             String keyVal = keyList.get(position);
             if(position >= notesList.get(noteID).getKeys().size()) {
                 holder.keyParent.setBackgroundColor(Color.parseColor("#fec001"));
+            } else {
+                holder.keyParent.setBackgroundColor(Color.parseColor("#ffffff"));
             }
             holder.key.setText(keyVal);
         }
@@ -330,7 +342,7 @@ public class NoteEditorActivity extends AppCompatActivity {
                     new AlertDialog.Builder(NoteEditorActivity.this)
                             .setIcon(android.R.drawable.ic_dialog_alert)
                             .setTitle("Delete")
-                            .setMessage("Are you sure you want to delete this note?")
+                            .setMessage("Are you sure you want to delete this TAG?")
                             .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which)

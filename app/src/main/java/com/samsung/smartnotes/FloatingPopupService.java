@@ -13,7 +13,6 @@ import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.IBinder;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -29,7 +28,6 @@ import android.widget.Toast;
 
 import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,22 +45,27 @@ public class FloatingPopupService extends Service {
     // Int variable to check if service is already running or not.
     public static int isFloatingServiceRunning = 0;
 
-    static TextView objectName;
+    static TextView inCircleText;
     static LinearLayout optionsParentView;
     static LinearLayout threeParentView;
     static ListView openNoteListView;
-    static TextView createNoteKey;
-    static TextView createNoteText;
+    static ListView addKeyListView;
+    static TextView createNoteUsingKeyView;
+    static TextView createNoteUsingTextView;
     static LinearLayout fullListView;
-    static ListView keyListView;
-    static ArrayAdapter<String> keyAdapter = null;
+    static ImageView backButton;
+    static ListView createUsingKeyListView;
+    static ImageView listIconView;
+    static ArrayAdapter<String> createKeyAdapter = null;
     static ArrayAdapter<String> noteAdapter = null;
+    static ArrayAdapter<String> addKeyAdapter = null;
 
     static boolean noteFound = false;
     static int foundNotePosition = -1;
-    static String receivedText;
+    static ArrayList<String> receivedText;
     static ArrayList<String> receivedObjectNames;
-    static ArrayList<String> keyListViewItems;
+    static ArrayList<String> createKeyListViewItems;
+    static ArrayList<String> addKeyListViewItems;
     static ArrayList<String> noteListViewItems;
 
     HashMap<String, Integer> notesWithIndex = new HashMap<>();
@@ -120,19 +123,29 @@ public class FloatingPopupService extends Service {
     }
 
     public void createNoteWithKeyUpdate(ArrayList<String> objectNamesList) {
-        keyListViewItems.clear();
-        for(String objects : receivedObjectNames) keyListViewItems.add(objects);
-        keyAdapter.notifyDataSetChanged();
-        threeParentView.setVisibility(View.VISIBLE);
-        createNoteKey.setVisibility(View.VISIBLE);
+        if(NoteEditorActivity.isAddingKey){
+            inCircleText.setText("Add TAG");
+            addKeyListViewItems.clear();
+            for (String objects : receivedObjectNames) addKeyListViewItems.add(objects);
+            addKeyAdapter.notifyDataSetChanged();
+            threeParentView.setVisibility(View.VISIBLE);
+            addKeyListView.setVisibility(View.VISIBLE);
+        } else {
+            createKeyListViewItems.clear();
+            for (String objects : receivedObjectNames) createKeyListViewItems.add(objects);
+            createKeyAdapter.notifyDataSetChanged();
+            threeParentView.setVisibility(View.VISIBLE);
+            createNoteUsingKeyView.setVisibility(View.VISIBLE);
+        }
     }
 
 
     public void removeAllViews() {
-        fullListView.setVisibility(View.GONE);
-        createNoteText.setVisibility(View.GONE);
-        createNoteKey.setVisibility(View.GONE);
+        fullListView.setVisibility(View.GONE);  // contains both the back button and create using key list
+        createNoteUsingTextView.setVisibility(View.GONE);
+        createNoteUsingKeyView.setVisibility(View.GONE);
         openNoteListView.setVisibility(View.GONE);
+        addKeyListView.setVisibility(View.GONE);
         threeParentView.setVisibility(View.GONE);
         optionsParentView.setVisibility(View.GONE);
     }
@@ -148,48 +161,45 @@ public class FloatingPopupService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         receivedObjectNames = intent.getStringArrayListExtra("objectNames");
-        receivedText = intent.getStringExtra("text");
+        receivedText = intent.getStringArrayListExtra("text");
 
+        if(optionsParentView.getVisibility() == View.VISIBLE) {
+            return START_STICKY;
+        }
+
+        if ((receivedObjectNames == null || receivedObjectNames.size() == 0) && (receivedText == null || receivedText.size() == 0))
+            stopSelf();
+
+        StringBuilder circleText = new StringBuilder();
+        if(receivedObjectNames != null && receivedObjectNames.size() > 0)
+            for(String objects : receivedObjectNames) if(objects.length()>0) {
+                circleText.append(objects);
+                if(!objects.equals(receivedObjectNames.get(receivedObjectNames.size() -1)))
+                    circleText.append(", ");
+            }
+        if(receivedText != null && receivedText.size() > 0) {
+            if (circleText.length() > 0)
+                circleText.append(", ");
+            circleText.append("TEXT");
+        }
+
+        inCircleText.setText(circleText);
         removeAllViews();
-        boolean nothingtoShow = true;
-
-        if(NoteEditorActivity.isAddingKey) {
-            if (receivedObjectNames != null && receivedObjectNames.size() > 0){
-                nothingtoShow = false;
+        if (NoteEditorActivity.isAddingKey) {
+            if (receivedObjectNames != null && receivedObjectNames.size() > 0) {
                 createNoteWithKeyUpdate(receivedObjectNames);
             }
         } else {
             if (receivedObjectNames != null && receivedObjectNames.size() > 0) {
-                nothingtoShow = false;
                 searchNotesAndUpdate(receivedObjectNames);
                 createNoteWithKeyUpdate(receivedObjectNames);
             }
-
-            if (receivedText != null && receivedText.length() > 0) {
-                nothingtoShow = false;
+            if (receivedText != null && receivedText.size() > 0) {
                 threeParentView.setVisibility(View.VISIBLE);
-                createNoteText.setVisibility(View.VISIBLE);
+                createNoteUsingTextView.setVisibility(View.VISIBLE);
             }
         }
 
-        // TODO: Implement this thing in ObjectNameReceiver (that will be more efficient).
-        if(nothingtoShow)
-            stopSelf();
-        //Log.d(TAG, "receivedObjectName="+receivedObjectName+"<--");
-//        if (receivedObjectName != null) {
-//            if (receivedObjectName.equals("null")) {
-//                //Log.d(TAG, "inside if");
-//                stopSelf();
-//            }
-//            objectName.setText(receivedObjectName);
-//
-//            if (NoteEditorActivity.isAddingKey) { // Adding key using camera from NoteEditorActivity
-//                noteText.setText("Add TAG");
-//                noteText.setVisibility(View.VISIBLE);
-//            } else { // Default case of receiving Object name from camera
-//                searchNote(receivedObjectName);
-//            }
-//        }
         return START_STICKY;
     }
 
@@ -240,34 +250,38 @@ public class FloatingPopupService extends Service {
         // Bind all Elements from XML to Java
         View default_view = mFloatingView.findViewById(R.id.complete_bubble);
 
-        objectName = (TextView) default_view.findViewById(R.id.object_name_text);
+        inCircleText = (TextView) default_view.findViewById(R.id.object_name_text);
 
         //Dynamically Setting properties for objectName
-        objectName.setEllipsize(TextUtils.TruncateAt.MARQUEE);
-        objectName.setSingleLine(true);
-        objectName.setSelected(true);
-        objectName.setMarqueeRepeatLimit(-1);
+        inCircleText.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+        inCircleText.setSingleLine(true);
+        inCircleText.setSelected(true);
+        inCircleText.setMarqueeRepeatLimit(-1);
 
         ImageView closeButton = (ImageView) default_view.findViewById(R.id.click_to_close);
         ImageView objectCircle = (ImageView) default_view.findViewById(R.id.object_name_circle);
         optionsParentView = (LinearLayout) default_view.findViewById(R.id.optionsParentView);
         threeParentView = (LinearLayout) default_view.findViewById(R.id.threeParentView);
         openNoteListView = (ListView) default_view.findViewById(R.id.openNoteList);
-        createNoteKey = (TextView) default_view.findViewById(R.id.keyNote);
-        createNoteText = (TextView) default_view.findViewById(R.id.textNote);
+        addKeyListView = (ListView) default_view.findViewById(R.id.addKeyList);
+        createNoteUsingKeyView = (TextView) default_view.findViewById(R.id.keyNote);
+        createNoteUsingTextView = (TextView) default_view.findViewById(R.id.textNote);
         fullListView = (LinearLayout) default_view.findViewById(R.id.fullListView);
-        ImageView backButton = (ImageView) default_view.findViewById(R.id.click_to_back);
-        keyListView = (ListView) default_view.findViewById(R.id.floatingListView);
+        backButton = (ImageView) default_view.findViewById(R.id.click_to_back);
+        createUsingKeyListView = (ListView) default_view.findViewById(R.id.floatingListView);
 
         // Initialize listViews
         noteListViewItems = new ArrayList<>();
-        noteAdapter = new ArrayAdapter<>(this, R.layout.list_white_text, R.id.list_content, noteListViewItems);
+        noteAdapter = new ArrayAdapter<>(this, R.layout.list_open_note, R.id.list_content, noteListViewItems);
         openNoteListView.setAdapter(noteAdapter);
 
-        keyListViewItems = new ArrayList<>();
-        keyAdapter = new ArrayAdapter<String>(this, R.layout.list_white_text, R.id.list_content, keyListViewItems);
-        keyListView.setAdapter(keyAdapter);
+        addKeyListViewItems = new ArrayList<>();
+        addKeyAdapter = new ArrayAdapter<>(this, R.layout.list_add_tag, R.id.list_content, addKeyListViewItems);
+        addKeyListView.setAdapter(addKeyAdapter);
 
+        createKeyListViewItems = new ArrayList<>();
+        createKeyAdapter = new ArrayAdapter<String>(this, R.layout.list_create_new_note, R.id.list_content, createKeyListViewItems);
+        createUsingKeyListView.setAdapter(createKeyAdapter);
 
         // Remove all views
         removeAllViews();
@@ -295,18 +309,11 @@ public class FloatingPopupService extends Service {
             }
         });
 
-        createNoteKey.setOnClickListener(new View.OnClickListener() {
+        createNoteUsingKeyView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 threeParentView.setVisibility(View.GONE);
                 fullListView.setVisibility(View.VISIBLE);
-            }
-        });
-
-        createNoteText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // TODO : Create new note with text and no tag.
             }
         });
 
@@ -356,28 +363,36 @@ public class FloatingPopupService extends Service {
             }
         });
 
-        keyListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        createUsingKeyListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
-                if(NoteEditorActivity.isAddingKey) {
-                    intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", /*Adding key*/NoteEditorActivity.currentNoteID);
-                } else {
-                    intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", /*New note*/-1);
-                }
-                intent.putExtra("keyValue", keyListViewItems.get(position));
+                intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", /*New note*/-1);
+                intent.putExtra("keyValue", createKeyListViewItems.get(position));
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_HISTORY);
                 startActivity(intent);
                 stopSelf();
             }
         });
 
-        createNoteText.setOnClickListener(new View.OnClickListener() {
+        createNoteUsingTextView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
                 intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", /*New note*/-1);
                 intent.putExtra("textValue", receivedText);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_HISTORY);
+                startActivity(intent);
+                stopSelf();
+            }
+        });
+
+        addKeyListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
+                intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", /*Adding key*/NoteEditorActivity.currentNoteID);
+                intent.putExtra("keyValue", addKeyListViewItems.get(position));
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_HISTORY);
                 startActivity(intent);
                 stopSelf();
