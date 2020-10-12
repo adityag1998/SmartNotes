@@ -4,27 +4,21 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -132,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
     static ArrayList<Note> notesList = new ArrayList<Note>();
     static ArrayList<String> textList = new ArrayList<String>();
 
+    static boolean developerOptions = false;
     static Gson gson = new Gson();
     static NoteAdapter mNoteAdapter;
     protected RecyclerView noteRecyclerView;
@@ -176,8 +171,17 @@ public class MainActivity extends AppCompatActivity {
         // Bind ListView with Array Adapter
         noteRecyclerView = findViewById(R.id.recyclerView);
         mNoteAdapter = new NoteAdapter(textList);
-        noteRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        noteRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
         noteRecyclerView.setAdapter(mNoteAdapter);
+
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getApplicationContext(), com.samsung.smartnotes.NoteEditorActivity.class);
+                startActivity(intent);
+            }
+        });
 
         //TfidfCalculation.updateAllTfidf();
         TfidfCalculation.recalculateAllTfidf();
@@ -213,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
                                 notesList.remove(mPosition);
                                 textList.remove(mPosition);
                                 mNoteAdapter.notifyDataSetChanged();
+                                TfidfCalculation.recalculateAllTfidf();
 
                                 //Add Logic to edit stored Data
                                 SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.samsung.smartnotes.notes"
@@ -242,10 +247,10 @@ public class MainActivity extends AppCompatActivity {
     {
         super.onOptionsItemSelected(item);
 
-        if(item.getItemId() == R.id.createNewNote)
+        if(item.getItemId() == R.id.developerOption)
         {
-            Intent intent = new Intent(getApplicationContext(), com.samsung.smartnotes.NoteEditorActivity.class);
-            startActivity(intent);
+            if(developerOptions == false) developerOptions = true;
+            else developerOptions = false;
             return true;
         }
 

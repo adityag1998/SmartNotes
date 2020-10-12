@@ -11,11 +11,11 @@
     <EditText
         android:id="@+id/editText"
         android:layout_width="match_parent"
-        android:layout_height="270dp"
+        android:layout_height="wrap_content"
         android:layout_margin="10dp"
         android:hint="Note"
         android:maxLines="10"
-        android:minLines="10"
+        android:minLines="2"
         android:padding="10dp"
         android:scrollbars="vertical" />
 
@@ -42,9 +42,10 @@
 
         <EditText
             android:id="@+id/editKey"
-            android:layout_width="191dp"
-            android:layout_height="56dp"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
             android:layout_margin="10dp"
+            android:layout_weight="4"
             android:ems="10"
             android:hint=""
             android:inputType="textPersonName"
@@ -53,7 +54,7 @@
 
         <Button
             android:id="@+id/addButton"
-            android:layout_width="wrap_content"
+            android:layout_width="0px"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="1"
@@ -62,8 +63,9 @@
 
         <Button
             android:id="@+id/cameraButton"
-            android:layout_width="wrap_content"
+            android:layout_width="0px"
             android:layout_height="wrap_content"
+            android:layout_weight="3"
             android:layout_gravity="center"
             android:text="Use Camera" />
 
@@ -72,7 +74,8 @@
     <TextView
         android:id="@+id/textViewTfidf"
         android:layout_width="match_parent"
-        android:layout_height="129dp"
+        android:layout_height="wrap_content"
+        android:scrollbars="vertical"
         android:layout_margin="15dp"
         android:text="TextView" />
 

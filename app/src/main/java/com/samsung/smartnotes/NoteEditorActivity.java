@@ -75,6 +75,9 @@ public class NoteEditorActivity extends AppCompatActivity {
         addButton = (Button) findViewById(R.id.addButton);
         TextView tfidfView = (TextView) findViewById(R.id.textViewTfidf);
 
+        if(!MainActivity.developerOptions)
+            tfidfView.setVisibility(View.GONE);
+
         //Bind keyList to recycler view, we have to bind it after initialization because we cannot bind null keyList to KeyAdapter
         recyclerView = findViewById(R.id.keyRecyclerView);
         mAdapter = new KeyAdapter(keyList);

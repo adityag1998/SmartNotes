@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/createNewNote"
-        android:title="Create New Note"></item>
+        android:id="@+id/developerOption"
+        android:title="Developer Option"></item>
 </menu>
