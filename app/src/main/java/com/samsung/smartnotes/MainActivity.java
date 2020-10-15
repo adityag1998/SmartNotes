@@ -18,13 +18,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -125,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
     static ArrayList<Note> notesList = new ArrayList<Note>();
     static ArrayList<String> textList = new ArrayList<String>();
+//    static ArrayList<NoteDataForView> notesForViewList = new ArrayList<>();
 
     static boolean developerOptions = false;
     static Gson gson = new Gson();
@@ -261,4 +263,5 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
     }
+
 }

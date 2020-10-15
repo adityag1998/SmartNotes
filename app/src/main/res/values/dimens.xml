@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="padding">6dp</dimen>
+    <dimen name="note_recycler_padding">2dp</dimen>
     <dimen name="margin">6dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
 </resources>

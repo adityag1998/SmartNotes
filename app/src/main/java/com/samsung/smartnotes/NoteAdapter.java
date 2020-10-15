@@ -1,23 +1,26 @@
 package com.samsung.smartnotes;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
 
-    private ArrayList<String> noteTextList;
+    private ArrayList<String> noteList;
     private onItemClickListener mOnItemClickListener;
     private onItemLongClickListener mOnItemLongClickListener;
 
-    public NoteAdapter(ArrayList<String> noteTextList) {
-        this.noteTextList = noteTextList;
+    public NoteAdapter(ArrayList<String> noteList) {
+        this.noteList = noteList;
     }
 
     public interface onItemClickListener {
@@ -45,7 +48,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, final int position) {
-        holder.textView.setText(noteTextList.get(position));
+        holder.textView.setText(noteList.get(position));
 
         holder.textView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -64,15 +67,15 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     @Override
     public int getItemCount() {
-        return noteTextList.size();
+        return noteList.size();
     }
 
 
     class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView textView;
-        NoteViewHolder(View view){
+        NoteViewHolder(View view) {
             super(view);
-            textView = view.findViewById(R.id.noteTextView);
+            textView = (TextView) view.findViewById(R.id.noteTextView);
         }
     }
 }

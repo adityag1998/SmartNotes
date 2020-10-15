@@ -2,6 +2,7 @@ package com.samsung.smartnotes;
 
 import android.util.Log;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,37 +55,66 @@ public class TfidfCalculation {
         return false;
     }
 
-    public static ArrayList<String> getTopTwoTerms(MainActivity.Note note) {
-        ArrayList<String> topTwo= new ArrayList<String>();
+    public static String getNextTerm(MainActivity.Note note, ArrayList<String> topTwo) {
         HashMap<String,Double> map = note.getTermTfidfMap();
-
-        if( map== null || map.size() == 0 ) return topTwo;
-
+        String nextTerm = null;
         double max = -1;
-        double secondMax = -1;
-        String maxTerm = null;
-        String secondMaxTerm = null;
+
         for(String term : map.keySet()) {
             if(map.get(term) > max) {
+                if(note.getBlackListTerms().contains(term) || topTwo.contains(term))
+                    continue;
                 max = map.get(term);
-                maxTerm = term;
+                nextTerm = term;
             }
         }
-        topTwo.add(maxTerm);
-        if(map.size() == 1) return topTwo;
+        return nextTerm;
+    }
 
-        for(String term : map.keySet()) {
-            if((map.get(term) > secondMax) && (map.get(term) <= max) && (!term.equals(maxTerm))) {
-                secondMax = map.get(term);
-                secondMaxTerm = term;
-            }
+    public static ArrayList<String> fillTopTwoTerms(MainActivity.Note note) {
+        ArrayList<String> topTwo = new ArrayList<>();
+        String currentTopTerm;
+        while(topTwo.size() < 2) {
+            currentTopTerm = getNextTerm(note, topTwo);
+            if(currentTopTerm == null)
+                break;
+            else
+                topTwo.add(currentTopTerm);
         }
-        topTwo.add(secondMaxTerm);
         return topTwo;
     }
 
+//    public static ArrayList<String> getTopTwoTerms(MainActivity.Note note) {
+//        ArrayList<String> topTwo= new ArrayList<String>();
+//        HashMap<String,Double> map = note.getTermTfidfMap();
+//
+//        if( map== null || map.size() == 0 ) return topTwo;
+//
+//        double max = -1;
+//        double secondMax = -1;
+//        String maxTerm = null;
+//        String secondMaxTerm = null;
+//        for(String term : map.keySet()) {
+//            if(map.get(term) > max) {
+//                max = map.get(term);
+//                maxTerm = term;
+//            }
+//        }
+//        topTwo.add(maxTerm);
+//        if(map.size() == 1) return topTwo;
+//
+//        for(String term : map.keySet()) {
+//            if((map.get(term) > secondMax) && (map.get(term) <= max) && (!term.equals(maxTerm))) {
+//                secondMax = map.get(term);
+//                secondMaxTerm = term;
+//            }
+//        }
+//        topTwo.add(secondMaxTerm);
+//        return topTwo;
+//    }
+
     public static void updateTopTwoTerms(MainActivity.Note note) {
-        note.setTopTwoTerms(getTopTwoTerms(note));
+        note.setTopTwoTerms(fillTopTwoTerms(note));
     }
 
     public static void updateAllTopTwoTerms() {

@@ -73,7 +73,7 @@ public class NoteEditorActivity extends AppCompatActivity {
         final EditText editKey = (EditText) findViewById(R.id.editKey);
         cameraButton = (Button) findViewById(R.id.cameraButton);
         addButton = (Button) findViewById(R.id.addButton);
-        TextView tfidfView = (TextView) findViewById(R.id.textViewTfidf);
+        final TextView tfidfView = (TextView) findViewById(R.id.textViewTfidf);
 
         if(!MainActivity.developerOptions)
             tfidfView.setVisibility(View.GONE);
@@ -150,6 +150,18 @@ public class NoteEditorActivity extends AppCompatActivity {
                 MainActivity.textList.set(noteID, String.valueOf(s));
                 notesList.get(noteID).setText(String.valueOf(s));
                 notesList.get(noteID).isTfidfUpdated = false;
+
+                for(int i=start; i<(start+count) ; ++i) {
+                    if(s.charAt(i) == ' '){
+                        showToast("updating Tfidf");
+                        notesList.get(noteID).isTermMapsUpdated = false;
+                        TfidfCalculation.recalculateAllTfidf();
+                        checkAndRemoveBlacklistedTerms();
+                        refreshSmartKeysInKeyList();
+                        mAdapter.notifyDataSetChanged();
+                        tfidfView.setText(notesList.get(noteID).getTermTfidfMap().toString());
+                    }
+                }
             }
 
             @Override
@@ -191,7 +203,7 @@ public class NoteEditorActivity extends AppCompatActivity {
             if(line.length() > 0) {
                 sb.append(line);
                 if(!line.equals(inputList.get(inputList.size() - 1)))
-                    sb.append("\n\n\n");
+                    sb.append("\n\n");
             }
         }
         return sb.toString();
@@ -210,6 +222,12 @@ public class NoteEditorActivity extends AppCompatActivity {
             keyList.remove(notesList.get(noteID).getKeys().size());
         }
 
+        if(notesList.get(noteID).getBlackListTerms().contains(key)){
+            notesList.get(noteID).getBlackListTerms().remove(key);
+        }
+
+        TfidfCalculation.updateTopTwoTerms(notesList.get(noteID));
+
         // now add the new key
         keyList.add(key);
         //mAdapter.notifyDataSetChanged();
@@ -222,14 +240,22 @@ public class NoteEditorActivity extends AppCompatActivity {
     }
 
     public void addSmartKeys() {
-        Log.d(TAG, "TopTwoTerms list is : " + notesList.get(noteID).getBlackListTerms().toString() );
+        Log.d(TAG, "TopTwoTerms list is : " + notesList.get(noteID).getTopTwoTerms().toString() );
         for(String keys : notesList.get(noteID).getTopTwoTerms()) {
-            if(!keyList.contains(keys) && !notesList.get(noteID).getBlackListTerms().contains(keys)){
+            if(!keyList.contains(keys)){
                 keyList.add(keys);
                 // mAdapter.notifyDataSetChanged();
             }
         }
         // mAdapter.notifyDataSetChanged();
+    }
+
+    public void refreshSmartKeysInKeyList() {
+        while(keyList.size() != notesList.get(noteID).getKeys().size()) {
+            keyList.remove(notesList.get(noteID).getKeys().size());
+        }
+        TfidfCalculation.updateTopTwoTerms(notesList.get(noteID));
+        addSmartKeys();
     }
 
     public void addAllKeysToList(ArrayList<String> inputKeyList) {
@@ -259,7 +285,8 @@ public class NoteEditorActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        if(notesList.get(noteID).getKeys().size() == 0 && MainActivity.textList.get(noteID) == "") {
+        System.out.println("Keys size :" + Integer.toString(notesList.get(noteID).getKeys().size()) + "----text=" + MainActivity.textList.get(noteID) + "---->");
+        if(notesList.get(noteID).getKeys().size() == 0 && MainActivity.textList.get(noteID).equals("")) {
             // delete created note
             MainActivity.textList.remove(noteID);
             notesList.remove(noteID);
@@ -312,7 +339,7 @@ public class NoteEditorActivity extends AppCompatActivity {
         public void onBindViewHolder(MyViewHolder holder, int position) {
             String keyVal = keyList.get(position);
             if(position >= notesList.get(noteID).getKeys().size()) {
-                holder.keyParent.setBackgroundColor(Color.parseColor("#fec001"));
+                holder.keyParent.setBackgroundColor(Color.parseColor("#ffde59"));
             } else {
                 holder.keyParent.setBackgroundColor(Color.parseColor("#ffffff"));
             }
@@ -352,13 +379,13 @@ public class NoteEditorActivity extends AppCompatActivity {
                                 {
                                     if(position >= notesList.get(noteID).getKeys().size()) {
                                         notesList.get(noteID).getBlackListTerms().add(keyList.get(position));
-                                        keyList.remove(position);
-                                        mAdapter.notifyDataSetChanged();
+                                        notesList.get(noteID).getTopTwoTerms().remove(keyList.get(position));
                                     } else {
                                         notesList.get(noteID).getKeys().remove(position);
                                         keyList.remove(position);
-                                        mAdapter.notifyDataSetChanged();
                                     }
+                                    refreshSmartKeysInKeyList();
+                                    mAdapter.notifyDataSetChanged();
                                 }
                             })
                             .setNegativeButton("No", null)

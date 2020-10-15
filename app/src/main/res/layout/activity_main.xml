@@ -5,13 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@color/mainBackground"
     tools:context=".MainActivity">
 
 
     <androidx.recyclerview.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="@dimen/padding"
+        android:padding="@dimen/note_recycler_padding"
         android:layout_margin="@dimen/margin"
         android:id="@+id/recyclerView"/>
 
@@ -22,6 +23,6 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         app:backgroundTint="@color/fabColor"
-        app:srcCompat="@drawable/ic_create_new_note" />
+        app:srcCompat="@drawable/ic_plus" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
