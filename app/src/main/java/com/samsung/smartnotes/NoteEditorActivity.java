@@ -46,6 +46,7 @@ public class NoteEditorActivity extends AppCompatActivity {
     int noteID;
     String keyValueFromService;
     ArrayList<String> textListFromService;
+    ArrayList<String> keyValueListFromService;
     public List<String> keyList;
     KeyAdapter mAdapter;
 
@@ -64,6 +65,7 @@ public class NoteEditorActivity extends AppCompatActivity {
         noteID = intent.getIntExtra("com.samsung.smartnotes.MainActivity.noteID" , -1);
         keyValueFromService = intent.getStringExtra("keyValue");
         textListFromService = intent.getStringArrayListExtra("textValue");
+        keyValueListFromService = intent.getStringArrayListExtra("keyValueList");
 
         //Initialize keyList Array
         keyList = new ArrayList<>();
@@ -117,7 +119,16 @@ public class NoteEditorActivity extends AppCompatActivity {
             } else if (textListFromService != null && textListFromService.size()>0) {
                 String processedText = processTextList(textListFromService);
                 editText.setText(processedText);
-                notesList.add(new MainActivity.Note(MainActivity.textList.size(), processedText));
+
+                MainActivity.Note newNote = new MainActivity.Note(MainActivity.textList.size(), processedText);
+                if(keyValueListFromService != null) {
+                    for(String receivedKey : keyValueListFromService) {
+                        keyList.add(receivedKey.toLowerCase());
+                        mAdapter.notifyDataSetChanged();
+                        newNote.addKey(receivedKey.toLowerCase());
+                    }
+                }
+                notesList.add(newNote);
                 MainActivity.textList.add(processedText);
             } else {
                 notesList.add(new MainActivity.Note(MainActivity.textList.size(), ""));

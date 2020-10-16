@@ -381,6 +381,7 @@ public class FloatingPopupService extends Service {
                 Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
                 intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", /*New note*/-1);
                 intent.putExtra("textValue", receivedText);
+                intent.putExtra("keyValueList", receivedObjectNames);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_NO_HISTORY);
                 startActivity(intent);
                 stopSelf();
