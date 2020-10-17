@@ -13,6 +13,7 @@ import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.IBinder;
 import android.text.TextUtils;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -30,7 +31,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Vector;
 
 import static com.samsung.smartnotes.MainActivity.notesList;
 
@@ -41,6 +42,7 @@ public class FloatingPopupService extends Service {
     private static final String TAG = "FloatingPopupService";
     private static final int FOREGROUND_ID = 1338;
     private static final String DEFAULT_CHANNEL_ID = "SERVICE_NOTIFICATION";
+    private static final int MINIMUM_MATCHING_TERMS = 2;
 
     // Int variable to check if service is already running or not.
     public static int isFloatingServiceRunning = 0;
@@ -56,19 +58,17 @@ public class FloatingPopupService extends Service {
     static ImageView backButton;
     static ListView createUsingKeyListView;
     static ImageView listIconView;
+
     static ArrayAdapter<String> createKeyAdapter = null;
     static ArrayAdapter<String> noteAdapter = null;
     static ArrayAdapter<String> addKeyAdapter = null;
 
-    static boolean noteFound = false;
-    static int foundNotePosition = -1;
     static ArrayList<String> receivedText;
     static ArrayList<String> receivedObjectNames;
     static ArrayList<String> createKeyListViewItems;
     static ArrayList<String> addKeyListViewItems;
     static ArrayList<String> noteListViewItems;
-
-    HashMap<String, Integer> notesWithIndex = new HashMap<>();
+    static ArrayList<Pair<String, Integer>> noteListViewItemsWithIndex = new ArrayList<Pair<String, Integer>>();
 
 
     public FloatingPopupService() {
@@ -89,9 +89,7 @@ public class FloatingPopupService extends Service {
     }
 
 
-    public void searchNotesAndUpdate(ArrayList<String> objectNameList) {
-        notesWithIndex.clear();
-        noteListViewItems.clear();
+    public void searchNotesForKeyAndUpdate(ArrayList<String> objectNameList) {
         if (notesList.size() == 0) {
             Toast.makeText(this, "Initializing DB", Toast.LENGTH_SHORT).show();
             initializeDB();
@@ -102,17 +100,72 @@ public class FloatingPopupService extends Service {
                 for (String key : note.getKeys()) {
                     if (key.equals(objectName.toLowerCase())) {
                         noteListViewItems.add(objectName + ": " + note.getText());
-                        notesWithIndex.put(objectName + ": " + note.getText(), notesList.indexOf(note));
+                        noteListViewItemsWithIndex.add(new Pair(objectName + ": " + note.getText(), notesList.indexOf(note)));
                     }
                 }
                 for (String key : note.getTopTwoTerms()) {
                     if(key.equals(objectName.toLowerCase())) {
                         if (!note.getKeys().contains(key) && !note.getBlackListTerms().contains(key)) {
                             noteListViewItems.add(objectName + ": " + note.getText());
-                            notesWithIndex.put(objectName + ": " + note.getText(), notesList.indexOf(note));
+                            noteListViewItemsWithIndex.add(new Pair(objectName + ": " + note.getText(), notesList.indexOf(note)));
                         }
                     }
                 }
+            }
+        }
+        if(noteListViewItems.size() > 0) {
+            noteAdapter.notifyDataSetChanged();
+            threeParentView.setVisibility(View.VISIBLE);
+            openNoteListView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void checkLastTermAndSort(Vector<Pair<Integer, Integer>> v) {
+        for(int i = v.size() - 1; i > 0; --i) {
+            if(v.get(i).second > v.get(i-1).second) {
+                Pair<Integer, Integer> temp = v.get(i-1);
+                v.set(i-1, v.get(i));
+                v.set(i, temp);
+            }
+        }
+    }
+
+    public void checkAndInsert(Vector<Pair<Integer, Integer>> v, int position, int numMatchingTerms) {
+        if(v.size() < 5) {
+            v.add(new Pair(position, numMatchingTerms));
+            checkLastTermAndSort(v);
+            return;
+        }
+
+        if(v.size() == 5) {
+            if(v.get(v.size() - 1).second < numMatchingTerms) {
+                v.set(v.size() - 1, new Pair(position, numMatchingTerms));
+                checkLastTermAndSort(v);
+            }
+        }
+    }
+
+    public void searchNotesForTextAndUpdate(ArrayList<String> textList) {
+        if (notesList.size() == 0) {
+            Toast.makeText(this, "Initializing DB", Toast.LENGTH_SHORT).show();
+            initializeDB();
+        }
+        ArrayList<String> terms = TfidfCalculation.getAllTerms(textList);
+
+        Vector<Pair<Integer, Integer>> topFive = new Vector<Pair<Integer, Integer>>();
+
+        for(MainActivity.Note note : notesList) {
+            int numMatchingTerms = 0;
+            for(String term : terms) {
+                if(note.getTermCounts().keySet().contains(term)) numMatchingTerms++;
+            }
+            checkAndInsert(topFive, notesList.indexOf(note), numMatchingTerms);
+        }
+
+        for(Pair<Integer, Integer> item : topFive) {
+            if(item.second >= MINIMUM_MATCHING_TERMS) {
+                noteListViewItems.add("Text: " + notesList.get(item.first).getText());
+                noteListViewItemsWithIndex.add(new Pair("Text: " + notesList.get(item.first).getText(), item.first));
             }
         }
         if(noteListViewItems.size() > 0) {
@@ -185,16 +238,19 @@ public class FloatingPopupService extends Service {
 
         inCircleText.setText(circleText);
         removeAllViews();
+        noteListViewItemsWithIndex.clear();
+        noteListViewItems.clear();
         if (NoteEditorActivity.isAddingKey) {
             if (receivedObjectNames != null && receivedObjectNames.size() > 0) {
                 createNoteWithKeyUpdate(receivedObjectNames);
             }
         } else {
             if (receivedObjectNames != null && receivedObjectNames.size() > 0) {
-                searchNotesAndUpdate(receivedObjectNames);
+                searchNotesForKeyAndUpdate(receivedObjectNames);
                 createNoteWithKeyUpdate(receivedObjectNames);
             }
             if (receivedText != null && receivedText.size() > 0) {
+                searchNotesForTextAndUpdate(receivedText);
                 threeParentView.setVisibility(View.VISIBLE);
                 createNoteUsingTextView.setVisibility(View.VISIBLE);
             }
@@ -325,35 +381,10 @@ public class FloatingPopupService extends Service {
             }
         });
 
-
-
-        //OnClickListener for Text Description (Go to Notes App, Empty for Now)
-//        noteText.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                // TODO: Either Create New Note [If no note found]
-//                //  OR Open Existing Note in Note Editor Activity with key filled as Object name
-//                Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
-//                if (NoteEditorActivity.isAddingKey) {  // Adding key using camera from NoteEditorActivity
-//                    intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", NoteEditorActivity.currentNoteID);
-//                    intent.putExtra("keyValue", receivedObjectName);
-//                }
-//                else { // Default case of receiving Object name from camera
-//                    intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", foundNotePosition); // Which row was
-//                    if (foundNotePosition == -1 && receivedObjectName != null) {
-//                        intent.putExtra("keyValue", receivedObjectName);
-//                    }
-//                }
-//                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-//                startActivity(intent);
-//                stopSelf();
-//            }
-//        });
-
         openNoteListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                int notePosition = notesWithIndex.get(noteListViewItems.get(position));
+                int notePosition = noteListViewItemsWithIndex.get(position).second;
 
                 Intent intent = new Intent(getApplicationContext(), NoteEditorActivity.class);
                 intent.putExtra("com.samsung.smartnotes.MainActivity.noteID", notePosition);

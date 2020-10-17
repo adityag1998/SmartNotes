@@ -164,7 +164,7 @@ public class NoteEditorActivity extends AppCompatActivity {
 
                 for(int i=start; i<(start+count) ; ++i) {
                     if(s.charAt(i) == ' '){
-                        showToast("updating Tfidf");
+                        // showToast("updating Tfidf");
                         notesList.get(noteID).isTermMapsUpdated = false;
                         TfidfCalculation.recalculateAllTfidf();
                         checkAndRemoveBlacklistedTerms();
@@ -208,7 +208,7 @@ public class NoteEditorActivity extends AppCompatActivity {
 
     }
 
-    public String processTextList(ArrayList<String> inputList) {
+    public static String processTextList(ArrayList<String> inputList) {
         StringBuilder sb = new StringBuilder();
         for (String line : inputList) {
             if(line.length() > 0) {
