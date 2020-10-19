@@ -16,6 +16,7 @@ import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -236,9 +237,9 @@ public class FloatingPopupService extends Service {
             initializeDB();
         }
         ArrayList<String> terms = TfidfCalculation.getAllTerms(textList);
+        if(terms == null) return;
 
         Vector<Pair<Integer, Integer>> topFive = new Vector<Pair<Integer, Integer>>();
-
         for(MainActivity.Note note : notesList) {
             int numMatchingTerms = 0;
             for(String term : terms) {
@@ -246,7 +247,6 @@ public class FloatingPopupService extends Service {
             }
             checkAndInsert(topFive, notesList.indexOf(note), numMatchingTerms);
         }
-
         for(Pair<Integer, Integer> item : topFive) {
             if(item.second >= MINIMUM_MATCHING_TERMS) {
                 noteListViewItems.add("Text: " + notesList.get(item.first).getText());
