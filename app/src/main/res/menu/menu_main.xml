@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/developerOption"
-        android:title="Developer Option"></item>
+        android:title="Developer Option">
+    </item>
+
+    <item
+        android:id="@+id/locationPermission"
+        android:title="Grant Location Permission">
+    </item>
+
 </menu>

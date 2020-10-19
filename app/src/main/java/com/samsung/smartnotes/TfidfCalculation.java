@@ -123,6 +123,26 @@ public class TfidfCalculation {
         }
     }
 
+    public static ArrayList<String> getAllTerms(ArrayList<String> textList) {
+        String text = NoteEditorActivity.processTextList(textList).toLowerCase();
+        text = preProcessText(text);
+        String[] words = text.split(" ");
+
+        if(words.length == 0)
+            return null;
+
+        ArrayList<String> importantTerms = new ArrayList<>();
+        for(String word : words) {
+            if(word.length()==0 || isDigit(word)) continue;
+            if(stopWords.contains(word)) continue;
+            importantTerms.add(word);
+        }
+
+        if(importantTerms.size() == 0)
+            return null;
+        return importantTerms;
+    }
+
     public static void updateTermMaps(MainActivity.Note note) {
         HashMap<String,Integer> wordCount = new HashMap<String,Integer>();
         HashMap<String,Double> termFreq = new HashMap<String,Double>();

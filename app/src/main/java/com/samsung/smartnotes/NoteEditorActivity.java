@@ -3,16 +3,21 @@ package com.samsung.smartnotes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -25,8 +30,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import static com.samsung.smartnotes.MainActivity.notesList;
 
@@ -34,6 +47,9 @@ import static com.samsung.smartnotes.MainActivity.notesList;
 public class NoteEditorActivity extends AppCompatActivity {
 
     public static final String TAG = "NoteEditorActivityLogs";
+    public static final double defaultLatitude = -90;
+    public static final double defaultLongitude = -45;
+
     public static boolean isAddingKey = false;
     public static int currentNoteID = -1;
     static Button cameraButton;
@@ -43,9 +59,14 @@ public class NoteEditorActivity extends AppCompatActivity {
     static ArrayList<String> topTwoKeys;
     static List<String> keysAdded;
 
+    static FusedLocationProviderClient fusedLocationClient;
+    static double currentLatitude = defaultLatitude;
+    static double currentLongitude = defaultLongitude;
+
     int noteID;
     String keyValueFromService;
     ArrayList<String> textListFromService;
+    ArrayList<String> keyValueListFromService;
     public List<String> keyList;
     KeyAdapter mAdapter;
 
@@ -59,11 +80,36 @@ public class NoteEditorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_note_editor);
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+//        LocationRequest mLocationRequest = LocationRequest.create();
+//        mLocationRequest.setInterval(60000);
+//        mLocationRequest.setFastestInterval(5000);
+//        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+//        LocationCallback mLocationCallback = new LocationCallback() {
+//            @Override
+//            public void onLocationResult(LocationResult locationResult) {
+//                if (locationResult == null) {
+//                    return;
+//                }
+//                for (Location location : locationResult.getLocations()) {
+//                    if (location != null) {
+//                        // UI updates.
+//                    }
+//                }
+//            }
+//        };
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            Toast.makeText(this, "Please give location permission from Samsung Notes -> menu -> Grant location permission", Toast.LENGTH_LONG).show();
+//        }
+//        fusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.getMainLooper());
+
         //Logic to Receive Intent
         Intent intent = getIntent();
         noteID = intent.getIntExtra("com.samsung.smartnotes.MainActivity.noteID" , -1);
         keyValueFromService = intent.getStringExtra("keyValue");
         textListFromService = intent.getStringArrayListExtra("textValue");
+        keyValueListFromService = intent.getStringArrayListExtra("keyValueList");
+
 
         //Initialize keyList Array
         keyList = new ArrayList<>();
@@ -109,18 +155,45 @@ public class NoteEditorActivity extends AppCompatActivity {
 
         else // create a new note
         {
+            // getLocation
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Kindly provide location permission in Samsung Notes -> Menu -> Grant Location Permission", Toast.LENGTH_LONG).show();
+            } else {
+                fusedLocationClient.getLastLocation()
+                        .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                            @Override
+                            public void onSuccess(Location location) {
+                                if (location != null) {
+                                    currentLatitude = location.getLatitude();
+                                    currentLongitude = location.getLongitude();
+                                } else {
+                                    System.out.println("Location not received");
+                                }
+                            }
+                        });
+            }
+
             if(keyValueFromService != null) {  // check if new note is created from camera intent
                 keyList.add(keyValueFromService.toLowerCase());
                 mAdapter.notifyDataSetChanged();
-                notesList.add(new MainActivity.Note(MainActivity.textList.size(), keyValueFromService.toLowerCase(), ""));
+                notesList.add(new MainActivity.Note(MainActivity.textList.size(), keyValueFromService.toLowerCase(), "", currentLatitude, currentLongitude));
                 MainActivity.textList.add("");
             } else if (textListFromService != null && textListFromService.size()>0) {
                 String processedText = processTextList(textListFromService);
                 editText.setText(processedText);
-                notesList.add(new MainActivity.Note(MainActivity.textList.size(), processedText));
+
+                MainActivity.Note newNote = new MainActivity.Note(MainActivity.textList.size(), processedText, currentLatitude, currentLongitude);
+                if(keyValueListFromService != null) {
+                    for(String receivedKey : keyValueListFromService) {
+                        keyList.add(receivedKey.toLowerCase());
+                        mAdapter.notifyDataSetChanged();
+                        newNote.addKey(receivedKey.toLowerCase());
+                    }
+                }
+                notesList.add(newNote);
                 MainActivity.textList.add(processedText);
             } else {
-                notesList.add(new MainActivity.Note(MainActivity.textList.size(), ""));
+                notesList.add(new MainActivity.Note(MainActivity.textList.size(), "", currentLatitude, currentLongitude));
                 MainActivity.textList.add("");
             }
             isAddingKey = false;
@@ -137,6 +210,8 @@ public class NoteEditorActivity extends AppCompatActivity {
         // Add smart Keys
         addSmartKeys();
         mAdapter.notifyDataSetChanged();
+        System.out.println("Location of Current Note : lat=" + notesList.get(noteID).getLatitude() + "  long="+ notesList.get(noteID).getLongitude());
+
 
         //Change Note when text has been edited
         editText.addTextChangedListener(new TextWatcher() {
@@ -153,7 +228,7 @@ public class NoteEditorActivity extends AppCompatActivity {
 
                 for(int i=start; i<(start+count) ; ++i) {
                     if(s.charAt(i) == ' '){
-                        showToast("updating Tfidf");
+                        // showToast("updating Tfidf");
                         notesList.get(noteID).isTermMapsUpdated = false;
                         TfidfCalculation.recalculateAllTfidf();
                         checkAndRemoveBlacklistedTerms();
@@ -177,6 +252,7 @@ public class NoteEditorActivity extends AppCompatActivity {
                 currentNoteID = noteID;
                 Intent cameraIntent = getPackageManager().getLaunchIntentForPackage("com.samsung.navicam");
                 if(cameraIntent != null) {
+                    cameraIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
                     startActivity(cameraIntent);
                     finish();
                 } else {
@@ -197,7 +273,7 @@ public class NoteEditorActivity extends AppCompatActivity {
 
     }
 
-    public String processTextList(ArrayList<String> inputList) {
+    public static String processTextList(ArrayList<String> inputList) {
         StringBuilder sb = new StringBuilder();
         for (String line : inputList) {
             if(line.length() > 0) {
@@ -281,7 +357,6 @@ public class NoteEditorActivity extends AppCompatActivity {
             }
         }
     }
-
 
     @Override
     protected void onDestroy() {

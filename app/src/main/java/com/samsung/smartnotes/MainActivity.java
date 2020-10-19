@@ -1,19 +1,26 @@
 package com.samsung.smartnotes;
 
+import android.Manifest;
+import android.app.Instrumentation;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
@@ -34,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
         int id;
         ArrayList<String> keyList;
         String text;
+        double latitude;
+        double longitude;
 
         ArrayList<String> topTwoTerms = new ArrayList<>();
         ArrayList<String> blackListTerms = new ArrayList<>();
@@ -44,27 +53,32 @@ public class MainActivity extends AppCompatActivity {
         HashMap<String, Double> termFreqMap = new HashMap<>();
         HashMap<String, Double> termTfidfMap = new HashMap<>();
 
-
-        public Note(int id, ArrayList<String> keyList, String text) {
+        public Note(int id, ArrayList<String> keyList, String text, double latitude, double longitude) {
             this.id = id;
             this.keyList = new ArrayList<String>();
             for ( String key : keyList ) {
                 this.keyList.add(key);
             }
             this.text = text;
+            this.latitude = latitude;
+            this.longitude = longitude;
         }
 
-        public Note(int id, String key, String text) {
+        public Note(int id, String key, String text, double latitude, double longitude) {
             this.id = id;
             this.keyList = new ArrayList<String>();
             this.keyList.add(key);
             this.text = text;
+            this.latitude = latitude;
+            this.longitude = longitude;
         }
 
-        public Note(int id, String text) {
+        public Note(int id, String text, double latitude, double longitude) {
             this.id = id;
             this.keyList = new ArrayList<String>();
             this.text = text;
+            this.latitude = latitude;
+            this.longitude = longitude;
         }
 
         void addKey(String keyValue) {
@@ -87,6 +101,13 @@ public class MainActivity extends AppCompatActivity {
             return this.text;
         }
 
+        double getLatitude() {
+            return this.latitude;
+        }
+
+        double getLongitude() {
+            return this.longitude;
+        }
 
         HashMap<String, Integer> getTermCounts() {
             return this.termCountMap;
@@ -132,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
     static Gson gson = new Gson();
     static NoteAdapter mNoteAdapter;
     protected RecyclerView noteRecyclerView;
+    ActivityResultLauncher<String> requestPermissionLauncher;
 
     // Request Service Code for Overlay Settings
     private static final int POPUP_DRAW_OVER_OTHER_APP_PERMISSION = 1001;
@@ -158,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
             if (jsonList == null) {
                 //Add a sample note
                 String exampleNote = "This is an Example Note";
-                notesList.add(new Note(0, "example", exampleNote));
+                notesList.add(new Note(0, "example", exampleNote, NoteEditorActivity.defaultLatitude , NoteEditorActivity.defaultLongitude));
                 textList.add(exampleNote);
             } else {
                 Type type = new TypeToken<ArrayList<Note>>() {
@@ -175,6 +197,15 @@ public class MainActivity extends AppCompatActivity {
         mNoteAdapter = new NoteAdapter(textList);
         noteRecyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
         noteRecyclerView.setAdapter(mNoteAdapter);
+
+        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                                        if (isGranted) {
+                                            Toast.makeText(this, "Location Permission Granted", Toast.LENGTH_LONG).show();
+                                        }
+                                        else {
+                                            Toast.makeText(this, "Location Permission Denied", Toast.LENGTH_LONG).show();
+                                        }
+                                    });
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -256,6 +287,14 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        if(item.getItemId() == R.id.locationPermission) {
+            if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission Alreayd Granted", Toast.LENGTH_SHORT).show();
+            } else {
+                // The registered ActivityResultCallback gets the result of this request
+                requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+        }
         return false;
     }
 
